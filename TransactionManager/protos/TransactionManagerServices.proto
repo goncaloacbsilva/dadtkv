@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+message DadInt {
+  string key = 1;
+  int32 value = 2;
+}
+
+message TxSubmitRequest {
+  string clientId = 1;
+  repeated string readEntries = 2;
+  repeated DadInt writeEntries = 3;
+}
+
+message TxSubmitResponse {
+  repeated DadInt entries = 1;
+}
+
+message TxStatusRequest {};
+
+message StatusResponse {
+  bool status = 1;
+}
+
+service TransactionManagerService {
+  rpc TxSubmit(TxSubmitRequest) returns (TxSubmitResponse);
+  rpc Status(TxStatusRequest) returns (StatusResponse);
+}
