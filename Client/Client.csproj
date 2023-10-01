@@ -18,4 +18,9 @@
         <Protobuf Include="../TransactionManager/protos/TransactionManagerServices.proto" GrpcServices="Client"/> 
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Shared\Shared.csproj" />
+    </ItemGroup>
+
+
 </Project>

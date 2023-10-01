@@ -1,16 +1,18 @@
 using System.Text.RegularExpressions;
+using Grpc.Core;
+using Shared;
 
 namespace Client;
 
 public class ScriptParser
 {
-    private TransactionManagerService.TransactionManagerServiceClient _client;
     private readonly string _path;
+    private ConnectionManager _connectionManager;
 
-    public ScriptParser(TransactionManagerService.TransactionManagerServiceClient client, string path)
+    public ScriptParser(string path, ConnectionManager connectionManager)
     {
-        _client = client;
         _path = path;
+        _connectionManager = connectionManager;
     }
 
     private TxSubmitRequest ParseTx(string line)
@@ -21,6 +23,11 @@ public class ScriptParser
         
         // Remove the parentheses and split the string by comma
         var parts = command[1].Trim('(', ')').Split(',');
+
+        if (parts.Length == 1 && parts[0].Equals(""))
+        {
+            parts = Array.Empty<string>();
+        }
         
         // Remove double quotes and trim whitespace for each value
         foreach (var part in parts)
@@ -60,8 +67,11 @@ public class ScriptParser
                 case 'T':
                     // Transaction
                     var request = ParseTx(line);
-                    var response = _client.TxSubmit(request);
-                    Console.WriteLine(response);
+                    Console.WriteLine("[Script]: [TX Request]: {0}", request);
+                    
+                    var response = _connectionManager.HandleRPCCall(() => _connectionManager.Client.TxSubmit(request));
+                    
+                    Console.WriteLine("[Script]: [TX Response]: {0}", response);
                     break;
                 case 'W':
                     var interval = int.Parse(line.Split(" ")[1]);

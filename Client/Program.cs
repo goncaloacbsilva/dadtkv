@@ -2,22 +2,20 @@
 
 using Client;
 using Grpc.Core;
+using Shared;
 
 public class Program
 {
     public static void Main(string[] args)
     {
-        string path = args[0];
+        string scriptPath = args[0];
+        string configPath = args[1];
 
-        var channel = new Channel("0.0.0.0", 3001, ChannelCredentials.Insecure);
-        var client = new TransactionManagerService.TransactionManagerServiceClient(channel);
-
-        ScriptParser parser = new ScriptParser(client, path);
+        ConfigurationManager configurationManager = new ConfigurationManager(configPath);
+        ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers());
+        ScriptParser parser = new ScriptParser(scriptPath, connectionManager);
         
         parser.Run();
-
-        Console.WriteLine("[Script]: Shutting down channel...");
-        channel.ShutdownAsync().Wait();
 
     }
 }
