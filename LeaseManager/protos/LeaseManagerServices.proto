@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message LeaseRequest {
+  string tmIdentifier = 1;
+  repeated string objects = 2;
+}
+
+message LeaseResponse {
+}
+
+
+service LeaseManagerService {
+  rpc Request(LeaseRequest) returns (LeaseResponse);
+}

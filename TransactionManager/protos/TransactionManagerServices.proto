@@ -5,6 +5,16 @@ message DadInt {
   int32 value = 2;
 }
 
+message ObjectLeases {
+  repeated string tmIdentifiers = 1;
+}
+
+message Leases {
+  map<string, ObjectLeases> leases = 1;
+}
+
+message LeasesResponse {};
+
 message TxSubmitRequest {
   string clientId = 1;
   repeated string readEntries = 2;
@@ -21,7 +31,12 @@ message StatusResponse {
   bool status = 1;
 }
 
+
+
 service TransactionManagerService {
   rpc TxSubmit(TxSubmitRequest) returns (TxSubmitResponse);
   rpc Status(TxStatusRequest) returns (StatusResponse);
+  
+  // Leases service RPCs
+  rpc UpdateLeases(Leases) returns (LeasesResponse);
 }
