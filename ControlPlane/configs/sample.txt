@@ -12,6 +12,7 @@
 # a character indicating whether it's a (T)ransaction or (L)ease manager
 # and a URL for g-RPC calls.
 P TM1 T http://localhost:3001
+P Lease1 L http://localhost:3002
 #
 # A client (indicated by the 'C' process code) does not have a g-RPC URL,
 # but has a path to the client script it is running.
@@ -44,4 +45,4 @@ D 10000
 # - The line ends with a sequence of pairs indentifying suspected processes
 # each pair includes the ids of the suspecting process and the suspected process,
 # e.g. (A,B) means that process A suspects process B
-F 1 N
+F 1 N N
