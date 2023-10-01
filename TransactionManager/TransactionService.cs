@@ -16,23 +16,30 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         var response = new TxSubmitResponse();
         // Acquire Leases
 
-        try
+        
+        // Write values
+        foreach (var entry in request.WriteEntries)
         {
-            // Write values
-            foreach (var entry in request.WriteEntries)
-            {
-                _internalDB.Add(entry.Key, entry.Value);
-            }
-
-            // Read values
-            var readEntries = request.ReadEntries.Select(key => new DadInt { Key = key, Value = _internalDB[key] })
-                .ToList();
-            
-            response.Entries.Add(readEntries);
+            _internalDB.Add(entry.Key, entry.Value);
         }
-        catch (Exception e)
+
+        // Read values
+        foreach (var key in request.ReadEntries)
         {
-            Console.WriteLine(e);
+            Int32 value;
+
+            if (_internalDB.TryGetValue(key, out value))
+            {
+                response.Entries.Add(new DadInt
+                {
+                    Key = key,
+                    Value = value
+                });
+            }
+            else
+            {
+                Console.WriteLine("Error: Key not found: {0}", key);
+            }
         }
         
         return Task.FromResult(response);
