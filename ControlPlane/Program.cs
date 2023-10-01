@@ -10,7 +10,7 @@ class Program
     {
         Process process = new Process();
         ProcessStartInfo startInfo = new ProcessStartInfo();
-        startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\Client\app\Client.exe";
+        startInfo.FileName = @"/home/goncalo/Documents/MEIC/DAD/dadtkv/Client/bin/Debug/net7.0/Client";
         startInfo.Arguments = string.Join(" ", args);
         Process.Start(startInfo);
     }
@@ -25,10 +25,17 @@ class Program
     {
         Process process = new Process();
         ProcessStartInfo startInfo = new ProcessStartInfo();
-        startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\TransactionManager\app\TransactionManager.exe";
+        startInfo.FileName = @"/home/goncalo/Documents/MEIC/DAD/dadtkv/TransactionManager/bin/Debug/net7.0/TransactionManager";
         startInfo.Arguments = string.Join(" ", args);
         startInfo.CreateNoWindow = false;
-        Process.Start(startInfo);
+        try
+        {
+            Process.Start(startInfo);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 
     public void launchTransactionManager(string[] args)
@@ -37,7 +44,7 @@ class Program
         thread.Start();
     }
 
-    private string fileReader(string filePath)
+    private void fileReader(string filePath)
     {
         // Read config
         var lines = File.ReadAllLines(filePath);
@@ -51,18 +58,23 @@ class Program
                 switch (command[0])
                 {
                     case "P":
-                        // Ignore client processes
                         if (command[2] == "C")
                         {
-                            string[] args = { command[3], filePath, command[1] };
-
+                            string[] args = { filePath, command[1], command[3] };
+                            Console.WriteLine("Launching client");
                             launchClient(args);
                         }
                         else if (command[2] == "T")
                         {
-                            string[] args = command[3].Split("//")[1].Split(":");
-                            args = args.Concat(new string[] { command[1] }).ToArray();
-                            launchTransactionManager(args);
+                            Console.WriteLine("Launching TM");
+                            var address = command[3].Split("//")[1].Split(":");
+
+                            var args = (new[]
+                            {
+                                filePath, command[1]
+                            }).Concat(address);
+                            
+                            launchTransactionManager(args.ToArray());
                         }
                         else if (command[3] == "L")
                         {
@@ -72,16 +84,14 @@ class Program
                 }
             }
         }
-
-        return null;
     }
 
-    static void Main(string[] args)
+    public static void Main(string[] args)
     {
         Program pm = new Program();
-        string filePath = "C:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt";
+        string filePath = "/home/goncalo/Documents/MEIC/DAD/dadtkv/ControlPlane/configs/sample.txt";
         Console.WriteLine("Introduce the path to the configuration file");
         //Console.ReadLine();
-        string s = pm.fileReader(filePath);
+        pm.fileReader(filePath);
     }
 }
