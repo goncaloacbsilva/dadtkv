@@ -18,7 +18,7 @@ public class Program
         var server = new Server
         {
             Services = { TransactionManagerService.BindService(new TransactionService()) },
-            Ports = { new ServerPort("0.0.0.0", port, ServerCredentials.Insecure) }
+            Ports = { new ServerPort("localhost", port, ServerCredentials.Insecure) }
         };
         server.Start();
         Console.WriteLine($"Server listening at port {port}. Press any key to terminate");
