@@ -8,8 +8,12 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        string scriptPath = args[0];
-        string configPath = args[1];
+        
+        // ./Client <configPath> <identifier> <scriptPath>
+        
+        string configPath = args[0];
+        string identifier = args[1];
+        string scriptPath = args[2];
 
         ConfigurationManager configurationManager = new ConfigurationManager(configPath);
         ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers());
