@@ -6,6 +6,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TransactionManager", "Trans
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeaseManager", "LeaseManager\LeaseManager.csproj", "{EC142083-BB9A-4086-B08A-5B74FA6675FB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{47B657B7-A284-48AE-A0C3-3D22E2BE5A83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControlPlane", "ControlPlane\ControlPlane.csproj", "{28D0B108-9E36-4302-AD53-EDBF59624D5F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{EC142083-BB9A-4086-B08A-5B74FA6675FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC142083-BB9A-4086-B08A-5B74FA6675FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC142083-BB9A-4086-B08A-5B74FA6675FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47B657B7-A284-48AE-A0C3-3D22E2BE5A83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47B657B7-A284-48AE-A0C3-3D22E2BE5A83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47B657B7-A284-48AE-A0C3-3D22E2BE5A83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47B657B7-A284-48AE-A0C3-3D22E2BE5A83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28D0B108-9E36-4302-AD53-EDBF59624D5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28D0B108-9E36-4302-AD53-EDBF59624D5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28D0B108-9E36-4302-AD53-EDBF59624D5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28D0B108-9E36-4302-AD53-EDBF59624D5F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
