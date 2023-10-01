@@ -12,10 +12,12 @@
 # a character indicating whether it's a (T)ransaction or (L)ease manager
 # and a URL for g-RPC calls.
 P TM1 T http://localhost:3001
+#P TM2 T http://localhost:3002
+#P TM3 T http://localhost:3003
 #
 # A client (indicated by the 'C' process code) does not have a g-RPC URL,
 # but has a path to the client script it is running.
-# P client1 C client-script-1
+#P client1 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_01.txt
 # P c2 C another-script
 # P c3 C one_more_script
 # P c4 C cs4
