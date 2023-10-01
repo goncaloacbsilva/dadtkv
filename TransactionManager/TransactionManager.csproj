@@ -16,6 +16,11 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <Protobuf Include="protos/TransactionManagerServices.proto" />
+        <Protobuf Include="../LeaseManager/protos/LeaseManagerServices.proto" GrpcServices="Client"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Shared\Shared.csproj" />
     </ItemGroup>
 
 
