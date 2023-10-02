@@ -3,6 +3,7 @@
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Serilog;
+using Serilog.Events;
 using Shared;
 using TransactionManager;
 
@@ -10,7 +11,6 @@ public class Program
 {
     static void Main(string[] args)
     {
-        var logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
 
         if (args.Length < 3)
         {
@@ -25,17 +25,18 @@ public class Program
         string address = args[2];
         int port = int.Parse(args[3]);
 
+        var logManager = new LogManager(identifier, LogEventLevel.Information);
         var configurationManager = new ConfigurationManager(configPath, identifier);
         
         var server = new Server
         {
-            Services = { TransactionManagerService.BindService(new TransactionService(configurationManager, identifier)).Intercept(new ServerExceptionsInterceptor(logger)) },
+            Services = { TransactionManagerService.BindService(new TransactionService(configurationManager, logManager)).Intercept(new ServerExceptionsInterceptor(logManager.Logger)) },
             Ports = { new ServerPort(address, port, ServerCredentials.Insecure) }
         };
         
         
         server.Start();
-        logger.Information($"Server listening at port {port}. Press any key to terminate");
+        logManager.Logger.Information($"Server listening at port {port}. Press any key to terminate");
         Console.ReadKey();
     }   
 }
