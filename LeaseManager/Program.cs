@@ -2,6 +2,8 @@
 
 using Grpc.Core;
 using LeaseManager;
+using Serilog.Events;
+using Shared;
 
 public class Program
 {
@@ -20,14 +22,15 @@ public class Program
         string identifier = args[1];
         int port = int.Parse(args[3]);
 
+        var logManager = new LogManager(identifier, LogEventLevel.Debug);
 
         var server = new Server
         {
-            Services = { LeaseManagerService.BindService(new LeaseService()) },
+            Services = { LeaseManagerService.BindService(new LeaseService(logManager)) },
             Ports = { new ServerPort(address, port, ServerCredentials.Insecure) }
         };
         server.Start();
-        Console.WriteLine($"Server listening at port {port}. Press any key to terminate");
+        logManager.Logger.Debug($"Server listening at port {port}. Press any key to terminate");
         Console.ReadKey();
     }   
 }

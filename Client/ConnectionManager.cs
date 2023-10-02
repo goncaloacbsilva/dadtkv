@@ -13,8 +13,9 @@ public class ConnectionManager
     private int _nextTM;
     private int _attempts;
     private int _maxAttempts;
+    private LogManager _logManager;
 
-    public ConnectionManager(List<ServerEntry> servers)
+    public ConnectionManager(List<ServerEntry> servers, LogManager logManager)
     {
         _servers = servers;
         _nextTM = 0;
@@ -22,6 +23,7 @@ public class ConnectionManager
 
         // Client will iterate the servers list at least 2 times before giving up
         _maxAttempts = servers.Count * 2;
+        _logManager = logManager;
     }
     
     private void GetNewConnection()
@@ -36,13 +38,13 @@ public class ConnectionManager
 
         try
         {
-            Console.WriteLine("[Connection Manager]: Attempting to connect to {0}:{1}", address.host, address.port);
+            _logManager.Logger.Debug("[Connection Manager]: Attempting to connect to {0}:{1}", address.host, address.port);
             _channel = new Channel(address.host, address.port, ChannelCredentials.Insecure);
             _client = new TransactionManagerService.TransactionManagerServiceClient(_channel);
         }
         catch (Exception e)
         {
-            Console.WriteLine("[Connection Manager]: Error: {0}", e.Message);
+            _logManager.Logger.Error("[Connection Manager]: Error: {0}", e.Message);
         }
 
         _nextTM++;
@@ -68,7 +70,7 @@ public class ConnectionManager
             {
                 _attempts++;
                 
-                Console.WriteLine("[RPCCall]: Sending request... (Attempt {0})", _attempts);
+                _logManager.Logger.Debug("[RPCCall]: Sending request... (Attempt {0})", _attempts);
                 var response = rpcAction();
                 
                 gotResponse = true;
@@ -78,7 +80,7 @@ public class ConnectionManager
             }
             catch (Exception e)
             {
-                Console.WriteLine("[RPCCall Error]: {0}", e);
+                _logManager.Logger.Error("[RPCCall Error]: {0}", e);
 
                 if (_attempts >= _maxAttempts)
                 {

@@ -26,7 +26,7 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         _leases = new Dictionary<string, Queue<string>>();
         _pendingTransactions = new Queue<Transaction>();
         
-        _tmBroadcast = new TMBroadcast(configurationManager);
+        _tmBroadcast = new TMBroadcast(configurationManager, logManager);
         _configurationManager = configurationManager;
         _logManager = logManager;
     }

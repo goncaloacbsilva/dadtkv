@@ -1,20 +1,24 @@
 using Grpc.Core;
+using Serilog.Core;
+
 namespace Shared;
 
 public abstract class BroadcastClient
 {
     protected List<Channel> _channels;
-    
-    protected BroadcastClient(ConfigurationManager configurationManager, ServerType typeSelector)
+    private LogManager _logManager;
+
+    protected BroadcastClient(ConfigurationManager configurationManager, LogManager logManager, ServerType typeSelector)
     {
         _channels = new List<Channel>();
-        
-        Console.WriteLine("[Broadcast Client]: Type selector is {0}", typeSelector.ToString());
+        _logManager = logManager;
+
+        _logManager.Logger.Debug("[Broadcast Client]: Type selector is {0}", typeSelector.ToString());
         
         // Init channels
         foreach (var serverEntry in configurationManager.Servers.Where(server => server.type == typeSelector).ToList())
         {
-            Console.WriteLine("[Broadcast Client]: Connecting to {0}:{1}", serverEntry.host, serverEntry.port);
+            _logManager.Logger.Debug("[Broadcast Client]: Connecting to {0}:{1}", serverEntry.host, serverEntry.port);
             _channels.Add(new Channel(serverEntry.host, serverEntry.port, ChannelCredentials.Insecure));
         }
     }
@@ -25,7 +29,7 @@ public abstract class BroadcastClient
     {
         for (int i = 0; i < _channels.Count; i++)
         {
-            Console.WriteLine("[Broadcast Client]: Broadcasting to {0}", _channels[i].Target);
+            _logManager.Logger.Debug("[Broadcast Client]: Broadcasting to {0}", _channels[i].Target);
             Send(i, request);
         }
     }
