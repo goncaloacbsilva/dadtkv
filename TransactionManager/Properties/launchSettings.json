@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "TransactionManager": {
-      "commandName": "Project",
-      "commandLineArgs": "localhost\r\n3001\r\nTM1"
-    }
-  }
-}
