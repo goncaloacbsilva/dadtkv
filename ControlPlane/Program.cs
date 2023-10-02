@@ -120,5 +120,10 @@ class Program
         Console.WriteLine("Introduce the path to the configuration file");
         //Console.ReadLine();
         pm.fileReader(filePath);
+        Console.WriteLine("Press Enter to shutdown");
+        while (Console.ReadKey(true).Key != ConsoleKey.Enter)
+        {
+            Console.WriteLine("Press Enter to shutdown");
+        }
     }
 }
