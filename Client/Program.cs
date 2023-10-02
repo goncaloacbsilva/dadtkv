@@ -15,9 +15,9 @@ public class Program
         string identifier = args[1];
         string scriptPath = args[2];
 
-        ConfigurationManager configurationManager = new ConfigurationManager(configPath);
+        ConfigurationManager configurationManager = new ConfigurationManager(configPath, identifier);
         ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers());
-        ScriptParser parser = new ScriptParser(scriptPath, connectionManager);
+        ScriptParser parser = new ScriptParser(scriptPath, connectionManager, identifier);
         
         parser.Run();
 
