@@ -141,4 +141,6 @@ public class ConfigurationManager
     public int SlotDuration => _slotDuration;
 
     public DateTime StartTime => _startTime;
+
+    public string Identifier => _identifier;
 }
