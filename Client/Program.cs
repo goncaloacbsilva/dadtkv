@@ -17,7 +17,7 @@ public class Program
 
         ConfigurationManager configurationManager = new ConfigurationManager(configPath);
         ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers());
-        ScriptParser parser = new ScriptParser(scriptPath, connectionManager);
+        ScriptParser parser = new ScriptParser(scriptPath, connectionManager, identifier);
         
         parser.Run();
 

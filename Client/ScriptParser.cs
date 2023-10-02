@@ -8,11 +8,13 @@ public class ScriptParser
 {
     private readonly string _path;
     private ConnectionManager _connectionManager;
+    private string _identifier;
 
-    public ScriptParser(string path, ConnectionManager connectionManager)
+    public ScriptParser(string path, ConnectionManager connectionManager,string identifier)
     {
         _path = path;
         _connectionManager = connectionManager;
+        _identifier = identifier;
     }
 
     private TxSubmitRequest ParseTx(string line)
@@ -67,11 +69,11 @@ public class ScriptParser
                 case 'T':
                     // Transaction
                     var request = ParseTx(line);
-                    Console.WriteLine("[Script]: [TX Request]: {0}", request);
+                    Console.WriteLine("[{0}][Script]: [TX Request]: {1}",_identifier, request);
                     
                     var response = _connectionManager.HandleRPCCall(() => _connectionManager.Client.TxSubmit(request));
                     
-                    Console.WriteLine("[Script]: [TX Response]: {0}", response);
+                    Console.WriteLine("[{0}][Script]: [TX Response]: {1}", _identifier, response);
                     break;
                 case 'W':
                     var interval = int.Parse(line.Split(" ")[1]);

@@ -75,14 +75,17 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             request = request,
             requiredLeases = requiredObjects
         });
-        
-        
+        Console.WriteLine();
+        Console.WriteLine("{0} writting" , _identifier);
+        Console.WriteLine();
         // Write values
         foreach (var entry in request.WriteEntries)
         {
             _internalDB.Add(entry.Key, entry.Value);
         }
-
+        Console.WriteLine();
+        Console.WriteLine("{0} Reading ", _identifier);
+        Console.WriteLine();
         // Read values
         foreach (var key in request.ReadEntries)
         {

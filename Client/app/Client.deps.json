@@ -107,6 +107,9 @@
       },
       "System.Memory/4.5.3": {},
       "Shared/1.0.0": {
+        "dependencies": {
+          "Grpc.Core": "2.46.6"
+        },
         "runtime": {
           "Shared.dll": {}
         }
