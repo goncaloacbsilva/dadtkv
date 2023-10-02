@@ -80,7 +80,7 @@ public class ConnectionManager
             {
                 Console.WriteLine("[RPCCall Error]: {0}", e);
 
-                if (_attempts > _maxAttempts)
+                if (_attempts >= _maxAttempts)
                 {
                     _channel.ShutdownAsync().Wait();
                     Environment.Exit(1);
