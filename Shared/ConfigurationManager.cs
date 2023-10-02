@@ -40,18 +40,24 @@ public class ConfigurationManager
     private int _timeSlots;
     private int _slotDuration;
     private DateTime _startTime;
-    
-    
-    public ConfigurationManager(string configPath)
+    private string _identifier;
+    private LogManager _logManager;
+
+
+    public ConfigurationManager(string configPath, string identifier, LogManager logManager)
     {
-        Console.WriteLine("[Config Manager]: Reading path: {0}", configPath);
+        
         
         // Read config
         var lines = File.ReadAllLines(configPath);
         
         _servers = new List<ServerEntry>();
         _states = new List<TimeSlotState>();
-        
+        _identifier = identifier;
+        _logManager = logManager;
+
+        _logManager.Logger.Debug("[Config Manager]: Reading path: {0}", configPath);
+
         foreach (var line in lines) {
             if (line[0] != '#')
             {
@@ -80,7 +86,8 @@ public class ConfigurationManager
                     case "T":
                         if (!DateTime.TryParse(command[1], out _startTime))
                         {
-                            Console.WriteLine("[Configuration Manager]: Error: Failed to parse start time");
+                            _logManager.Logger.Error("[Config Manager]: Error: Failed to parse start time");
+                            Environment.Exit(1);
                         }
                         break;
                     case "D":
@@ -119,18 +126,35 @@ public class ConfigurationManager
                 }
             }
         }
-        
-        Console.WriteLine("[Config Manager]: Start Time: {0}", _startTime);
-        Console.WriteLine("[Config Manager]: {0} time slots with {1} milliseconds each", _timeSlots, _slotDuration);
-        Console.WriteLine("[Config Manager]: Parsed {0} servers and {1} states", _servers.Count, _states.Count);
+
+        _logManager.Logger.Debug("[Config Manager]: Start Time: {0}" , _startTime);
+        _logManager.Logger.Debug("[Config Manager]: {0} time slots with {1} milliseconds each", _timeSlots, _slotDuration);
+        _logManager.Logger.Debug("[Config Manager]: Parsed {0} servers and {1} states", _servers.Count, _states.Count);
     }
-
-    public List<ServerEntry> Servers => _servers;
-
+    
     public List<ServerEntry> TransactionManagers()
     {
         return _servers.Where(server => server.type == ServerType.Transaction).ToList();
     }
+    
+    public void WaitForTestStart()
+    {
+        if (_startTime < DateTime.Now)
+        {
+            _logManager.Logger.Error("[Config Manager]: Error: Invalid start time");
+            Environment.Exit(1);
+        }
+        
+        int waitInterval = (int)(_startTime - DateTime.Now).TotalMilliseconds;
+        
+        _logManager.Logger.Information("========== Test will begin at {0} ==========", _startTime);
+        
+        Thread.Sleep(waitInterval);
+        
+        _logManager.Logger.Information("Test start: {0}", DateTime.Now);
+    }
+    
+    public List<ServerEntry> Servers => _servers;
     
     public List<TimeSlotState> States => _states;
 
@@ -139,4 +163,6 @@ public class ConfigurationManager
     public int SlotDuration => _slotDuration;
 
     public DateTime StartTime => _startTime;
+
+    public string Identifier => _identifier;
 }

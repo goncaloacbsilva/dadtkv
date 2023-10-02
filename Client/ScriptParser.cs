@@ -7,17 +7,24 @@ namespace Client;
 public class ScriptParser
 {
     private readonly string _path;
+    private string _identifier;
     private ConnectionManager _connectionManager;
+    private LogManager _logManager;
 
-    public ScriptParser(string path, ConnectionManager connectionManager)
+    public ScriptParser(string path, ConnectionManager connectionManager, string identifier, LogManager logManager)
     {
         _path = path;
+        _identifier = identifier;
         _connectionManager = connectionManager;
+        _logManager = logManager;
     }
 
     private TxSubmitRequest ParseTx(string line)
     {
-        TxSubmitRequest request = new TxSubmitRequest();
+        TxSubmitRequest request = new TxSubmitRequest
+        {
+            ClientId = _identifier
+        };
         
         var command = line.Split(" ");
         
@@ -67,15 +74,15 @@ public class ScriptParser
                 case 'T':
                     // Transaction
                     var request = ParseTx(line);
-                    Console.WriteLine("[Script]: [TX Request]: {0}", request);
+                    _logManager.Logger.Debug("[Script]: {@0}", request);
                     
                     var response = _connectionManager.HandleRPCCall(() => _connectionManager.Client.TxSubmit(request));
-                    
-                    Console.WriteLine("[Script]: [TX Response]: {0}", response);
+
+                    _logManager.Logger.Debug("[Script]: {@0}", response);
                     break;
                 case 'W':
                     var interval = int.Parse(line.Split(" ")[1]);
-                    Console.WriteLine("[Script]: Wait {0}", interval);
+                    _logManager.Logger.Debug("[Script]: Wait {0}", interval);
                     System.Threading.Thread.Sleep(interval);
                     break;
             }

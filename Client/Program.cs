@@ -2,6 +2,8 @@
 
 using Client;
 using Grpc.Core;
+using Serilog.Core;
+using Serilog.Events;
 using Shared;
 
 public class Program
@@ -15,9 +17,12 @@ public class Program
         string identifier = args[1];
         string scriptPath = args[2];
 
-        ConfigurationManager configurationManager = new ConfigurationManager(configPath);
-        ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers());
-        ScriptParser parser = new ScriptParser(scriptPath, connectionManager);
+        var logManager = new LogManager(identifier, LogEventLevel.Debug);
+        ConfigurationManager configurationManager = new ConfigurationManager(configPath, identifier, logManager);
+        ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers(), logManager);
+        ScriptParser parser = new ScriptParser(scriptPath, connectionManager, identifier, logManager);
+        
+        configurationManager.WaitForTestStart();
         
         parser.Run();
 

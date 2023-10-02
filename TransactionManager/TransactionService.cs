@@ -16,34 +16,30 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
     private Dictionary<string, Queue<string>> _leases;
     private Queue<Transaction> _pendingTransactions;
     
-    private ConfigurationManager _configurationManager;
-    private TMBroadcast _tmBroadcast;
-    private string _identifier;
+    private readonly ConfigurationManager _configurationManager;
+    private LogManager _logManager;
+    private readonly TMBroadcast _tmBroadcast;
     
-    public TransactionService(ConfigurationManager configurationManager, string identifier)
+    public TransactionService(ConfigurationManager configurationManager, LogManager logManager)
     {
         _internalDB = new Dictionary<string, int>();
         _leases = new Dictionary<string, Queue<string>>();
-        _configurationManager = configurationManager;
-        _tmBroadcast = new TMBroadcast(configurationManager);
         _pendingTransactions = new Queue<Transaction>();
-        _identifier = identifier;
+        
+        _tmBroadcast = new TMBroadcast(configurationManager, logManager);
+        _configurationManager = configurationManager;
+        _logManager = logManager;
     }
 
-    private bool hasLease(string key)
+    private bool HasLease(string key)
     {
-        if (_leases.ContainsKey(key))
-        {
-            string tmIdentifier;
-            return (_leases[key].TryPeek(out tmIdentifier) && tmIdentifier.Equals(_identifier));
-        }
-
-        return false;
+        if (!_leases.ContainsKey(key)) return false;
+        return (_leases[key].TryPeek(out var tmIdentifier) && tmIdentifier.Equals(_configurationManager.Identifier));
     }
     
-    private HashSet<string> getObjects(TxSubmitRequest request)
+    private HashSet<string> GetObjects(TxSubmitRequest request)
     {
-        HashSet<string> objects = new HashSet<string>();
+        var objects = new HashSet<string>();
         
         request.WriteEntries.ToList().ForEach(entry => objects.Add(entry.Key));
         request.ReadEntries.ToList().ForEach(key => objects.Add(key));
@@ -54,33 +50,38 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
     public override Task<TxSubmitResponse> TxSubmit(TxSubmitRequest request, ServerCallContext context)
     {
         var response = new TxSubmitResponse();
-        
+
+        _logManager.Logger.Debug("Received TxSubmit from {0}", request.ClientId);
+
         // Acquire Leases
-        var requiredObjects = getObjects(request);
-        var missingLeases = requiredObjects.Where(key => !hasLease(key)).ToList();
-        
+        var requiredObjects = GetObjects(request);
+        var missingLeases = requiredObjects.Where(key => !HasLease(key)).ToList();
+
         if (missingLeases.Count != 0)
         {
             var leaseRequest = new LeaseRequest
             {
-                TmIdentifier = _identifier
+                TmIdentifier = _configurationManager.Identifier
             };
-            
+
             leaseRequest.Objects.Add(missingLeases);
             _tmBroadcast.Broadcast(leaseRequest);
         }
-        
+
         _pendingTransactions.Enqueue(new Transaction
         {
             request = request,
             requiredLeases = requiredObjects
         });
-        
-        
+
+
         // Write values
         foreach (var entry in request.WriteEntries)
         {
-            _internalDB.Add(entry.Key, entry.Value);
+            if (_internalDB.TryAdd(entry.Key, entry.Value))
+            {
+                _internalDB[entry.Key] = entry.Value;
+            }
         }
 
         // Read values
@@ -98,7 +99,7 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             }
             else
             {
-                Console.WriteLine("Error: Key not found: {0}", key);
+                _logManager.Logger.Warning("Key not found: {0}", key);
             }
         }
         
