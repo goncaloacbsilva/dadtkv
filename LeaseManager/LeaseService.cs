@@ -14,7 +14,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
 
     public override Task<LeaseResponse> Request(LeaseRequest request, ServerCallContext context)
     {
-        _logManager.Logger.Debug("Received: {0}", request);
+        _logManager.Logger.Debug("Received: {@0}", request);
         return base.Request(request, context);
     }
 }

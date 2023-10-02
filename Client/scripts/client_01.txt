@@ -13,6 +13,6 @@
 # the write set contains keys and values
 T () (<"name1",10>,<"name2",20>)
 # both the read set and write set can be empty but the parenthesis will still be in the command
-T ("name2") (<"name3",456>)
+T ("name2","name7") (<"name3",456>)
 # wait command (in milliseconds)
 W 5000

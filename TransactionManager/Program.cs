@@ -27,13 +27,13 @@ public class Program
 
         var logManager = new LogManager(identifier, LogEventLevel.Debug);
         var configurationManager = new ConfigurationManager(configPath, identifier, logManager);
-        
         var server = new Server
         {
             Services = { TransactionManagerService.BindService(new TransactionService(configurationManager, logManager)).Intercept(new ServerExceptionsInterceptor(logManager.Logger)) },
             Ports = { new ServerPort(address, port, ServerCredentials.Insecure) }
         };
         
+        configurationManager.WaitForTestStart();
         
         server.Start();
         logManager.Logger.Information($"Server listening at port {port}. Press any key to terminate");

@@ -29,6 +29,7 @@ public class Program
             Services = { LeaseManagerService.BindService(new LeaseService(logManager)) },
             Ports = { new ServerPort(address, port, ServerCredentials.Insecure) }
         };
+        
         server.Start();
         logManager.Logger.Debug($"Server listening at port {port}. Press any key to terminate");
         Console.ReadKey();

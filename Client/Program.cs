@@ -18,10 +18,11 @@ public class Program
         string scriptPath = args[2];
 
         var logManager = new LogManager(identifier, LogEventLevel.Debug);
-
         ConfigurationManager configurationManager = new ConfigurationManager(configPath, identifier, logManager);
-        ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers(),logManager);
+        ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers(), logManager);
         ScriptParser parser = new ScriptParser(scriptPath, connectionManager, identifier, logManager);
+        
+        configurationManager.WaitForTestStart();
         
         parser.Run();
 

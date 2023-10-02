@@ -99,7 +99,7 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             }
             else
             {
-                Console.WriteLine("Error: Key not found: {0}", key);
+                _logManager.Logger.Warning("Key not found: {0}", key);
             }
         }
         

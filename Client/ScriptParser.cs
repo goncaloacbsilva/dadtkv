@@ -74,11 +74,11 @@ public class ScriptParser
                 case 'T':
                     // Transaction
                     var request = ParseTx(line);
-                    _logManager.Logger.Debug("[Script]: [TX Request]: {0}", request);
+                    _logManager.Logger.Debug("[Script]: {@0}", request);
                     
                     var response = _connectionManager.HandleRPCCall(() => _connectionManager.Client.TxSubmit(request));
 
-                    _logManager.Logger.Debug("[Script]: [TX Response]: {0}", response);
+                    _logManager.Logger.Debug("[Script]: {@0}", response);
                     break;
                 case 'W':
                     var interval = int.Parse(line.Split(" ")[1]);
