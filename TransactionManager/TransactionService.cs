@@ -54,33 +54,38 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
     public override Task<TxSubmitResponse> TxSubmit(TxSubmitRequest request, ServerCallContext context)
     {
         var response = new TxSubmitResponse();
-        
+
+        Console.WriteLine("[{0}][TM Manager]: Received TxSubmit from {1}", _identifier, request.ClientId);
+
         // Acquire Leases
         var requiredObjects = getObjects(request);
         var missingLeases = requiredObjects.Where(key => !hasLease(key)).ToList();
-        
+
         if (missingLeases.Count != 0)
         {
             var leaseRequest = new LeaseRequest
             {
                 TmIdentifier = _identifier
             };
-            
+
             leaseRequest.Objects.Add(missingLeases);
             _tmBroadcast.Broadcast(leaseRequest);
         }
-        
+
         _pendingTransactions.Enqueue(new Transaction
         {
             request = request,
             requiredLeases = requiredObjects
         });
-        
-        
+
+
         // Write values
         foreach (var entry in request.WriteEntries)
         {
-            _internalDB.Add(entry.Key, entry.Value);
+            if (_internalDB.TryAdd(entry.Key, entry.Value))
+            {
+                _internalDB[entry.Key] = entry.Value;
+            }
         }
 
         // Read values
