@@ -40,9 +40,10 @@ public class ConfigurationManager
     private int _timeSlots;
     private int _slotDuration;
     private DateTime _startTime;
+    private string _identifier;
     
     
-    public ConfigurationManager(string configPath)
+    public ConfigurationManager(string configPath, string identifier)
     {
         Console.WriteLine("[Config Manager]: Reading path: {0}", configPath);
         
@@ -51,6 +52,7 @@ public class ConfigurationManager
         
         _servers = new List<ServerEntry>();
         _states = new List<TimeSlotState>();
+        _identifier = identifier;
         
         foreach (var line in lines) {
             if (line[0] != '#')
@@ -80,7 +82,7 @@ public class ConfigurationManager
                     case "T":
                         if (!DateTime.TryParse(command[1], out _startTime))
                         {
-                            Console.WriteLine("[Configuration Manager]: Error: Failed to parse start time");
+                            Console.WriteLine("[{0}][Config Manager]: Error: Failed to parse start time", _identifier);
                         }
                         break;
                     case "D":
@@ -120,9 +122,9 @@ public class ConfigurationManager
             }
         }
         
-        Console.WriteLine("[Config Manager]: Start Time: {0}", _startTime);
-        Console.WriteLine("[Config Manager]: {0} time slots with {1} milliseconds each", _timeSlots, _slotDuration);
-        Console.WriteLine("[Config Manager]: Parsed {0} servers and {1} states", _servers.Count, _states.Count);
+        Console.WriteLine("[{0}][Config Manager]: Start Time: {1}", _identifier, _startTime);
+        Console.WriteLine("[{0}][Config Manager]: {1} time slots with {2} milliseconds each", _identifier, _timeSlots, _slotDuration);
+        Console.WriteLine("[{0}][Config Manager]: Parsed {1} servers and {2} states", _identifier, _servers.Count, _states.Count);
     }
 
     public List<ServerEntry> Servers => _servers;
