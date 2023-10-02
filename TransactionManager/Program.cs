@@ -26,7 +26,7 @@ public class Program
         int port = int.Parse(args[3]);
 
         var logManager = new LogManager(identifier, LogEventLevel.Debug);
-        var configurationManager = new ConfigurationManager(configPath, identifier, logManager);
+        var configurationManager = new ConfigurationManager(configPath, identifier, true, logManager);
         var server = new Server
         {
             Services = { TransactionManagerService.BindService(new TransactionService(configurationManager, logManager)).Intercept(new ServerExceptionsInterceptor(logManager.Logger)) },

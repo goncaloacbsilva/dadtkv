@@ -1,4 +1,7 @@
-﻿namespace Shared;
+﻿using System.Timers;
+using Timer = System.Timers.Timer;
+
+namespace Shared;
 
 public enum ServerType
 {
@@ -37,14 +40,22 @@ public class ConfigurationManager
 {
     private List<ServerEntry> _servers;
     private List<TimeSlotState> _states;
+    
+    // Time slots related variables
     private int _timeSlots;
     private int _slotDuration;
+    private TimeSlotState _currentState;
+    private int _currentSlot;
+    private Timer _slotsTimer;
+    
     private DateTime _startTime;
     private string _identifier;
     private LogManager _logManager;
 
+    private bool _isServer;
 
-    public ConfigurationManager(string configPath, string identifier, LogManager logManager)
+
+    public ConfigurationManager(string configPath, string identifier, bool isServer, LogManager logManager)
     {
         
         
@@ -55,6 +66,8 @@ public class ConfigurationManager
         _states = new List<TimeSlotState>();
         _identifier = identifier;
         _logManager = logManager;
+        _isServer = isServer;
+        _currentSlot = -1;
 
         _logManager.Logger.Debug("[Config Manager]: Reading path: {0}", configPath);
 
@@ -137,6 +150,33 @@ public class ConfigurationManager
         return _servers.Where(server => server.type == ServerType.Transaction).ToList();
     }
     
+    private void NextSlot()
+    {
+        if (_currentSlot >= _timeSlots)
+        {
+            _slotsTimer.Stop();
+            _slotsTimer.Dispose();
+            _logManager.Logger.Information("Test end: {0}", DateTime.Now);
+            return;
+        }
+        
+        _currentSlot++;
+        _logManager.Logger.Debug("[Configuration Manager][TimeSlots]: Begin Slot {0}, at {1}", _currentSlot, DateTime.Now);
+        try
+        {
+            _currentState = _states.Find(state => state.timeSlot == _currentSlot);
+        }
+        catch (Exception e)
+        {
+            // ignored
+        }
+    }
+
+    private void OnTimedEvent(Object source, ElapsedEventArgs e)
+    {
+        NextSlot();
+    }
+    
     public void WaitForTestStart()
     {
         if (_startTime < DateTime.Now)
@@ -152,7 +192,18 @@ public class ConfigurationManager
         Thread.Sleep(waitInterval);
         
         _logManager.Logger.Information("Test start: {0}", DateTime.Now);
+
+        if (_isServer)
+        {
+            NextSlot();
+            _slotsTimer = new Timer(_slotDuration);
+            _slotsTimer.Elapsed += OnTimedEvent;
+            _slotsTimer.AutoReset = true;
+            _slotsTimer.Start();
+        }
     }
+
+    public ServerState CurrentState => _currentState.states[_identifier];
     
     public List<ServerEntry> Servers => _servers;
     
