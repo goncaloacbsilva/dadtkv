@@ -6,31 +6,38 @@ using System.IO;
 
 class Program
 {
-    private void launchClientProcess(string[] args)
+    private void launchClient(string[] args)
     {
         Process process = new Process();
         ProcessStartInfo startInfo = new ProcessStartInfo();
-        startInfo.FileName = @"/home/goncalo/Documents/MEIC/DAD/dadtkv/Client/bin/Debug/net7.0/Client";
-        startInfo.Arguments = string.Join(" ", args);
-        Process.Start(startInfo);
-    }
-
-    public void launchClient(string[] args)
-    {
-        Thread thread = new Thread(() => launchClientProcess(args));
-        thread.Start();
-    }
-
-    public void launchTransactionManagerProcess(string[] args)
-    {
-        Process process = new Process();
-        ProcessStartInfo startInfo = new ProcessStartInfo();
-        startInfo.FileName = @"/home/goncalo/Documents/MEIC/DAD/dadtkv/TransactionManager/bin/Debug/net7.0/TransactionManager";
+        //change file path
+        startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\Client\app\Client.exe";
         startInfo.Arguments = string.Join(" ", args);
         startInfo.CreateNoWindow = false;
+        startInfo.WindowStyle = ProcessWindowStyle.Normal;
+        startInfo.UseShellExecute = true;
+        startInfo.RedirectStandardOutput = false;
+        startInfo.RedirectStandardError = false;
+        process.StartInfo = startInfo;
+        process.Start();
+    }
+
+    public void launchTransactionManager(string[] args)
+    {
         try
         {
-            Process.Start(startInfo);
+            Process process = new Process();
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            //change file path
+            startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\TransactionManager\app\TransactionManager.exe";
+            startInfo.Arguments = string.Join(" ", args);
+            startInfo.CreateNoWindow = false;
+            startInfo.WindowStyle = ProcessWindowStyle.Normal;
+            startInfo.UseShellExecute = true;
+            startInfo.RedirectStandardOutput = false;
+            startInfo.RedirectStandardError = false;
+            process.StartInfo = startInfo;
+            process.Start();
         }
         catch (Exception e)
         {
@@ -38,10 +45,20 @@ class Program
         }
     }
 
-    public void launchTransactionManager(string[] args)
+    public void launchLease(string[] args)
     {
-        Thread thread = new Thread(() => launchTransactionManagerProcess(args));
-        thread.Start();
+        Process process = new Process();
+        ProcessStartInfo startInfo = new ProcessStartInfo();
+        //change file path
+        startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\LeaseManager\app\LeaseManager.exe";
+        startInfo.Arguments = string.Join(" ", args);
+        startInfo.CreateNoWindow = false;
+        startInfo.WindowStyle = ProcessWindowStyle.Normal;
+        startInfo.UseShellExecute = true;
+        startInfo.RedirectStandardOutput = false;
+        startInfo.RedirectStandardError = false;
+        process.StartInfo = startInfo;
+        process.Start();
     }
 
     private void fileReader(string filePath)
@@ -73,14 +90,22 @@ class Program
                             {
                                 filePath, command[1]
                             }).Concat(address);
-                            
+
                             launchTransactionManager(args.ToArray());
                         }
-                        else if (command[3] == "L")
+                        else if (command[2] == "L")
                         {
-                            //launch leases
+                            Console.WriteLine("Launching Lease");
+                            var address = command[3].Split("//")[1].Split(":");
+
+                            var args = (new[]
+                            {
+                                filePath, command[1]
+                            }).Concat(address);
+
+                            launchLease(args.ToArray()); 
                         }
-                        break;
+                    break;
                 }
             }
         }
@@ -89,7 +114,8 @@ class Program
     public static void Main(string[] args)
     {
         Program pm = new Program();
-        string filePath = "/home/goncalo/Documents/MEIC/DAD/dadtkv/ControlPlane/configs/sample.txt";
+        //change file path
+        string filePath = "C:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt";
         Console.WriteLine("Introduce the path to the configuration file");
         //Console.ReadLine();
         pm.fileReader(filePath);

@@ -13,12 +13,14 @@ public class Program
             Console.WriteLine("ERROR: Arguments required");
             return;
         }
-        
+
         // ./LeaseManager <address> <port>
-        
-        string address = args[0];
-        int port = int.Parse(args[1]);
-        
+
+        string address = args[2];
+        string identifier = args[1];
+        int port = int.Parse(args[3]);
+
+
         var server = new Server
         {
             Services = { LeaseManagerService.BindService(new LeaseService()) },
