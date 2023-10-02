@@ -1,10 +1,8 @@
-using Microsoft.Extensions.Logging;
 using Serilog.Core;
-
-namespace Shared;
-
 using Grpc.Core;
 using Grpc.Core.Interceptors;
+
+namespace Shared;
 
 public class ServerExceptionsInterceptor : Interceptor
 {
