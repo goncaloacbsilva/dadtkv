@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Client": {
-      "commandName": "Project",
-      "commandLineArgs": "C:\\Users\\renat\\Desktop\\dadtkv\\Client\\scripts\\client_01.txt\r\nC:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt\r\nC1"
-    }
-  }
-}
