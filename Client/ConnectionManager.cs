@@ -26,7 +26,7 @@ public class ConnectionManager
         _logManager = logManager;
     }
     
-    private void GetNewConnection()
+    private void GetNewConnection(bool random)
     {
         if (_channel != null)
         {
@@ -34,6 +34,12 @@ public class ConnectionManager
             _channel.ShutdownAsync().Wait();
         }
 
+        if (random)
+        {
+            Random rnd = new Random();
+            _nextTM = rnd.Next(0, _servers.Count - 1);
+        }
+        
         var address = _servers[_nextTM];
 
         try
@@ -61,7 +67,7 @@ public class ConnectionManager
         
         if (_client == null || _channel == null)
         {
-            GetNewConnection();
+            GetNewConnection(true);
         }
 
         do
@@ -88,7 +94,7 @@ public class ConnectionManager
                     Environment.Exit(1);
                 }
                 
-                GetNewConnection();
+                GetNewConnection(false);
             }
         } while (!gotResponse);
 
