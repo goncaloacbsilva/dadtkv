@@ -208,6 +208,9 @@ public class ConfigurationManager
         }
     }
 
+    public List<SuspectPair> CurrentSuspects =>
+        _currentState.suspects.Where(pair => pair.suspecting.Equals(_identifier)).ToList();
+
     public ServerState CurrentState => _currentState.states[_identifier];
     
     public List<ServerEntry> Servers => _servers;
