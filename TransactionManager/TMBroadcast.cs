@@ -4,7 +4,7 @@ public class TMBroadcast : BroadcastClient
 {
     private readonly List<LeaseManagerService.LeaseManagerServiceClient> _clients;
     
-    public TMBroadcast(ConfigurationManager configurationManager, LogManager logManager) : base(configurationManager, logManager, ServerType.Lease)
+    public TMBroadcast(ConfigurationManager configurationManager, LogManager logManager) : base(configurationManager, logManager, ServerType.Lease, false)
     {
         _clients = new List<LeaseManagerService.LeaseManagerServiceClient>();
         

@@ -8,7 +8,7 @@ public abstract class BroadcastClient
     protected List<Channel> _channels;
     private LogManager _logManager;
 
-    protected BroadcastClient(ConfigurationManager configurationManager, LogManager logManager, ServerType typeSelector)
+    protected BroadcastClient(ConfigurationManager configurationManager, LogManager logManager, ServerType typeSelector, bool excludeSelf)
     {
         _channels = new List<Channel>();
         _logManager = logManager;
@@ -16,7 +16,7 @@ public abstract class BroadcastClient
         _logManager.Logger.Debug("[Broadcast Client]: Type selector is {0}", typeSelector.ToString());
         
         // Init channels
-        foreach (var serverEntry in configurationManager.Servers.Where(server => server.type == typeSelector).ToList())
+        foreach (var serverEntry in configurationManager.Servers.Where(server => (server.type == typeSelector) && (!excludeSelf || !server.identifier.Equals(configurationManager.Identifier))).ToList())
         {
             _logManager.Logger.Debug("[Broadcast Client]: Connecting to {0}:{1}", serverEntry.host, serverEntry.port);
             _channels.Add(new Channel(serverEntry.host, serverEntry.port, ChannelCredentials.Insecure));
