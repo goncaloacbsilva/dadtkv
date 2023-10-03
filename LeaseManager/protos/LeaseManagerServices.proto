@@ -2,6 +2,11 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
+enum PrepareResponseType {
+  PROMISE = 0;
+  REJECT = 1;
+}
+
 message LeaseRequest {
   string tmIdentifier = 1;
   repeated string objects = 2;
@@ -11,7 +16,20 @@ message LeaseRequest {
 message LeaseRequestResponse {
 }
 
+message PrepareRequest {
+  int32 epoch = 1;
+  string identifier = 2;
+}
+
+message PrepareResponse {
+  PrepareResponseType type = 1;
+}
+
+message Accept {}
+
+message Accepted {}
 
 service LeaseManagerService {
   rpc Request(LeaseRequest) returns (LeaseRequestResponse);
+  rpc Prepare(PrepareRequest) returns (PrepareResponse);
 }
