@@ -1,14 +1,17 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 message LeaseRequest {
   string tmIdentifier = 1;
   repeated string objects = 2;
+  google.protobuf.Timestamp timestamp = 3;
 }
 
-message LeaseResponse {
+message LeaseRequestResponse {
 }
 
 
 service LeaseManagerService {
-  rpc Request(LeaseRequest) returns (LeaseResponse);
+  rpc Request(LeaseRequest) returns (LeaseRequestResponse);
 }

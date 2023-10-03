@@ -221,4 +221,6 @@ public class ConfigurationManager
     public DateTime StartTime => _startTime;
 
     public string Identifier => _identifier;
+
+    public int CurrentEpoch => _currentSlot;
 }

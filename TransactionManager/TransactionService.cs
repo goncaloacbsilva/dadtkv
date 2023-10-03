@@ -1,3 +1,4 @@
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Shared;
 
@@ -61,7 +62,8 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         {
             var leaseRequest = new LeaseRequest
             {
-                TmIdentifier = _configurationManager.Identifier
+                TmIdentifier = _configurationManager.Identifier,
+                Timestamp = Timestamp.FromDateTime(DateTime.UtcNow)
             };
 
             leaseRequest.Objects.Add(missingLeases);
