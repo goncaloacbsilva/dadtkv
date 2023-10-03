@@ -30,23 +30,24 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
     private bool CurrentIsLeader()
     {
         _logManager.Logger.Debug("[Paxos]: Am I a leader?");
+        var leaseServers = _configurationManager.Servers
+            .Where(server =>
+                (server.type == ServerType.Lease) &&
+                String.CompareOrdinal(server.identifier, _configurationManager.Identifier) < 0)
+            .Select(server => server.identifier).ToList();
+        
+        _logManager.Logger.Debug("[Paxos]: Servers that I'm watching: {0}", leaseServers);
+        
         try
         {
-            var currentSuspected = _configurationManager.CurrentSuspects.Select(suspect => suspect.suspected).ToList();
-            var leaseServers = _configurationManager.Servers
-                .Where(server =>
-                    (server.type == ServerType.Lease) &&
-                    String.CompareOrdinal(server.identifier, _configurationManager.Identifier) < 0)
-                .Select(server => server.identifier).ToList();
-
-            _logManager.Logger.Debug("[Paxos]: Servers that I'm watching: {0}", leaseServers);
+            var currentSuspected = _configurationManager.CurrentSuspects().Select(suspect => suspect.suspected).ToList();
             _logManager.Logger.Debug("[Paxos]: Suspected servers: {0}", currentSuspected);
             
             return leaseServers.All(currentSuspected.Contains);
         }
         catch (Exception e)
         {
-            return false;
+            return (leaseServers.Count == 0);
         }
     }
 

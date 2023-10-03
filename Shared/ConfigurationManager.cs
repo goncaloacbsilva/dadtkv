@@ -208,8 +208,10 @@ public class ConfigurationManager
         }
     }
 
-    public List<SuspectPair> CurrentSuspects =>
-        _currentState.suspects.Where(pair => pair.suspecting.Equals(_identifier)).ToList();
+    public List<SuspectPair> CurrentSuspects()
+    {
+        return _currentState.suspects.Count > 0 ? _currentState.suspects.Where(pair => pair.suspecting.Equals(_identifier)).ToList() : new List<SuspectPair>();
+    }
 
     public ServerState CurrentState => _currentState.states[_identifier];
     
