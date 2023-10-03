@@ -161,7 +161,7 @@ public class ConfigurationManager
         }
         
         _currentSlot++;
-        _logManager.Logger.Debug("[Configuration Manager][TimeSlots]: Begin Slot {0}, at {1}", _currentSlot, DateTime.Now);
+        _logManager.Logger.Verbose("[Configuration Manager][TimeSlots]: Begin Slot {0}, at {1}", _currentSlot, DateTime.Now);
         try
         {
             _currentState = _states.Find(state => state.timeSlot == _currentSlot);

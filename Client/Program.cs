@@ -17,7 +17,7 @@ public class Program
         string identifier = args[1];
         string scriptPath = args[2];
 
-        var logManager = new LogManager(identifier, LogEventLevel.Debug);
+        var logManager = new LogManager(identifier, LogEventLevel.Information);
         ConfigurationManager configurationManager = new ConfigurationManager(configPath, identifier, false, logManager);
         ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers(), logManager);
         ScriptParser parser = new ScriptParser(scriptPath, connectionManager, identifier, logManager);
