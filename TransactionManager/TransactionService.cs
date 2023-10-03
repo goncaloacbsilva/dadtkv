@@ -1,6 +1,9 @@
+using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Shared;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace TransactionManager;
 
@@ -46,7 +49,27 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         request.ReadEntries.ToList().ForEach(key => objects.Add(key));
         
         return objects;
-    } 
+    }
+
+    public override Task<LeasesResponse> UpdateLeases(Leases leases, ServerCallContext context)
+    {
+        var response = new LeasesResponse();
+
+        _logManager.Logger.Debug("Updating leases");
+
+        //add new leases to object queues
+        foreach (var lease in leases.Leases_)
+        {
+            if (!_leases.ContainsKey(lease.Key))
+            {
+                _leases.Add(lease.Key, new Queue<string>());
+            }
+            foreach(var value in lease.Value.TmIdentifiers)
+                _leases[lease.Key].Enqueue(value);
+        }
+
+        return Task.FromResult(response);
+    }
 
     public override Task<TxSubmitResponse> TxSubmit(TxSubmitRequest request, ServerCallContext context)
     {
