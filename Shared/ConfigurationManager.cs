@@ -38,6 +38,10 @@ public struct TimeSlotState
 
 public class ConfigurationManager
 {
+
+    public delegate void EventHandler(object sender, EventArgs args) ;
+    public event EventHandler NextSlotEvent = delegate{};
+
     private List<ServerEntry> _servers;
     private List<TimeSlotState> _states;
     
@@ -165,6 +169,7 @@ public class ConfigurationManager
         try
         {
             _currentState = _states.Find(state => state.timeSlot == _currentSlot);
+            NextSlotEvent(this, new EventArgs());
         }
         catch (Exception e)
         {
@@ -176,7 +181,7 @@ public class ConfigurationManager
     {
         NextSlot();
     }
-    
+
     public void WaitForTestStart()
     {
         if (_startTime < DateTime.Now)

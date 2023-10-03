@@ -5,25 +5,36 @@ using System.Diagnostics;
 using System.IO;
 using Shared;
 
+public enum ShowConsole
+{
+    CLIENT,
+    TRANSACTION,
+    LEASE,
+    ALL
+}
+
 class Program
 {
-    private void launchClient(string[] args)
+    private void launchClient(string[] args, ShowConsole showConsole)
     {
         Process process = new Process();
         ProcessStartInfo startInfo = new ProcessStartInfo();
         //change file path
         startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\Client\app\Client.exe";
         startInfo.Arguments = string.Join(" ", args);
-        startInfo.CreateNoWindow = false;
-        startInfo.WindowStyle = ProcessWindowStyle.Normal;
-        startInfo.UseShellExecute = true;
-        startInfo.RedirectStandardOutput = false;
-        startInfo.RedirectStandardError = false;
+        if (showConsole == ShowConsole.CLIENT || showConsole == ShowConsole.ALL)
+        {
+            startInfo.CreateNoWindow = false;
+            startInfo.WindowStyle = ProcessWindowStyle.Normal;
+            startInfo.UseShellExecute = true;
+            startInfo.RedirectStandardOutput = false;
+            startInfo.RedirectStandardError = false;
+        }
         process.StartInfo = startInfo;
         process.Start();
     }
 
-    public void launchTransactionManager(string[] args)
+    public void launchTransactionManager(string[] args, ShowConsole showConsole)
     {
         try
         {
@@ -32,11 +43,14 @@ class Program
             //change file path
             startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\TransactionManager\app\TransactionManager.exe";
             startInfo.Arguments = string.Join(" ", args);
-            startInfo.CreateNoWindow = false;
-            startInfo.WindowStyle = ProcessWindowStyle.Normal;
-            startInfo.UseShellExecute = true;
-            startInfo.RedirectStandardOutput = false;
-            startInfo.RedirectStandardError = false;
+            if (showConsole == ShowConsole.TRANSACTION || showConsole == ShowConsole.ALL) 
+            { 
+                startInfo.CreateNoWindow = false;
+                startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                startInfo.UseShellExecute = true;
+                startInfo.RedirectStandardOutput = false;
+                startInfo.RedirectStandardError = false;
+            }
             process.StartInfo = startInfo;
             process.Start();
         }
@@ -46,23 +60,26 @@ class Program
         }
     }
 
-    public void launchLease(string[] args)
+    public void launchLease(string[] args, ShowConsole showConsole)
     {
         Process process = new Process();
         ProcessStartInfo startInfo = new ProcessStartInfo();
         //change file path
         startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\LeaseManager\app\LeaseManager.exe";
         startInfo.Arguments = string.Join(" ", args);
-        startInfo.CreateNoWindow = false;
-        startInfo.WindowStyle = ProcessWindowStyle.Normal;
-        startInfo.UseShellExecute = true;
-        startInfo.RedirectStandardOutput = false;
-        startInfo.RedirectStandardError = false;
+        if (showConsole == ShowConsole.LEASE || showConsole == ShowConsole.ALL)
+        {
+            startInfo.CreateNoWindow = false;
+            startInfo.WindowStyle = ProcessWindowStyle.Normal;
+            startInfo.UseShellExecute = true;
+            startInfo.RedirectStandardOutput = false;
+            startInfo.RedirectStandardError = false;
+        }
         process.StartInfo = startInfo;
         process.Start();
     }
 
-    private void fileReader(string filePath)
+    private void fileReader(string filePath, ShowConsole showConsole)
     {
         // Read config
         var lines = File.ReadAllLines(filePath);
@@ -80,7 +97,7 @@ class Program
                         {
                             string[] args = { filePath, command[1], command[3] };
                             Console.WriteLine("Launching client");
-                            launchClient(args);
+                            launchClient(args, showConsole);
                         }
                         else if (command[2] == "T")
                         {
@@ -92,7 +109,7 @@ class Program
                                 filePath, command[1]
                             }).Concat(address);
 
-                            launchTransactionManager(args.ToArray());
+                            launchTransactionManager(args.ToArray(), showConsole);
                         }
                         else if (command[2] == "L")
                         {
@@ -103,8 +120,7 @@ class Program
                             {
                                 filePath, command[1]
                             }).Concat(address);
-
-                            launchLease(args.ToArray()); 
+                            launchLease(args.ToArray(), showConsole); 
                         }
                     break;
                 }
@@ -119,7 +135,7 @@ class Program
         string filePath = "C:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt";
         Console.WriteLine("Introduce the path to the configuration file");
         //Console.ReadLine();
-        pm.fileReader(filePath);
+        pm.fileReader(filePath,ShowConsole.LEASE);
         Console.WriteLine("Press Enter to shutdown");
         while (Console.ReadKey(true).Key != ConsoleKey.Enter)
         {
