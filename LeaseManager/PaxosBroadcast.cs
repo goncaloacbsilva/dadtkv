@@ -5,8 +5,7 @@ namespace LeaseManager;
 public enum BroadcastPhase
 {
     Prepare,
-    Accept,
-    Commit
+    Accept
 }
 
 public class PaxosBroadcast : BroadcastClient
@@ -30,22 +29,24 @@ public class PaxosBroadcast : BroadcastClient
     {
         _phase = phase;
         _hasMajority = false;
-        
-        int responses = 0;
+        //1 to account for the request sent to the server it self
+        int responses = 1;
 
         Func<TResponse, bool> checkMajorityFunction = (TResponse response) =>
         {
             PaxosResponseStatus status = PaxosResponseStatus.Reject;
 
-            switch(_phase) {
-                case BroadcastPhase.Prepare:
-                    status = (response as Promise).Status;
-                    break;
-                case BroadcastPhase.Accept:
-                    status = (response as Accepted).Status;
-                    break;
-                default:
-                    throw new Exception("[Paxos Broadcast]: Error: Phase not implemented");
+            if (response != null) {
+                switch(_phase) {
+                    case BroadcastPhase.Prepare:
+                        status = (response as Promise).Status;
+                        break;
+                    case BroadcastPhase.Accept:
+                        status = (response as Accepted).Status;
+                        break;
+                    default:
+                        throw new Exception("[Paxos Broadcast]: Error: Phase not implemented");
+                }
             }
 
             if (status == PaxosResponseStatus.Accept)
@@ -63,12 +64,19 @@ public class PaxosBroadcast : BroadcastClient
 
     public override async Task<TResponse> Send<TRequest, TResponse>(int index, TRequest request)
     {
-        switch (_phase)
-        {
-            case BroadcastPhase.Prepare:
-                return (TResponse) Convert.ChangeType(await _clients[index].PrepareAsync(request as PrepareRequest), typeof(TResponse));
-            default:
-                throw new Exception("[Paxos Broadcast]: Error: Phase not implemented");
+        try {
+            switch (_phase)
+            {
+                case BroadcastPhase.Prepare:
+                    return (TResponse) Convert.ChangeType(await _clients[index].PrepareAsync(request as PrepareRequest), typeof(TResponse));
+                case BroadcastPhase.Accept:
+                    return (TResponse)Convert.ChangeType(await _clients[index].AcceptAsync(request as AcceptRequest), typeof(TResponse));
+                default:
+                    throw new Exception("[Paxos Broadcast]: Error: Phase not implemented");
+            }
+        } catch (Exception e) {
+            _logManager.Logger.Error("[Paxos Broadcast]: Error: Server {0} not responding", _channels[index].Target);
+            return default(TResponse);
         }
     }
 

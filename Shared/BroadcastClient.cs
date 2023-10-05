@@ -6,7 +6,7 @@ namespace Shared;
 public abstract class BroadcastClient
 {
     protected List<Channel> _channels;
-    private LogManager _logManager;
+    protected LogManager _logManager;
 
     protected BroadcastClient(ConfigurationManager configurationManager, LogManager logManager, ServerType typeSelector, bool excludeSelf)
     {
@@ -47,13 +47,17 @@ public abstract class BroadcastClient
         // Wait for responses
         while (sendTasks.Any())
         {
+            
             Task<TResponse> finishedTask = await Task.WhenAny(sendTasks);
             sendTasks.Remove(finishedTask);
-            _logManager.Logger.Debug("[Broadcast (URB)]: Received response {@0}", finishedTask.Result);
-            if (hasMajority(finishedTask.Result)) { break; }
+            if(finishedTask != null)
+            {
+                _logManager.Logger.Debug("[Broadcast (URB)]: Received response {@0}", finishedTask.Result);
+                if (hasMajority(finishedTask.Result)) { break; }
+            }
         }
 
-        return sendTasks.Select(task => task.Result).ToList();
+        return sendTasks.Where(task => task.Result != null).Select(task => task.Result).ToList();
     }
 
     public void ShutdownChannels()

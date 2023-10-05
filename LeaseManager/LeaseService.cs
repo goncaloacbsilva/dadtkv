@@ -1,3 +1,4 @@
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Shared;
 
@@ -14,9 +15,9 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
     
     private ConfigurationManager _configurationManager;
     private LogManager _logManager;
-
     private readonly PaxosBroadcast _paxosBroadcast;
     private PaxosState _state;
+    private Queue<Tuple<int, LeaseRequest>> _pendingRequests;
 
 
     public LeaseService(ConfigurationManager configurationManager, LogManager logManager)
@@ -25,6 +26,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
         _logManager = logManager;
         _paxosBroadcast = new PaxosBroadcast(configurationManager, logManager);
         _state.value = new List<LeaseRequest>();
+        _pendingRequests = new Queue<Tuple<int, LeaseRequest>>();
         
         _configurationManager.NextSlotEvent += (sender, args) => { RunPaxos(); };
     }
@@ -32,7 +34,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
     public override Task<LeaseRequestResponse> Request(LeaseRequest request, ServerCallContext context)
     {
         _logManager.Logger.Debug("Received: {@0}", request);
-        _state.value.Add(request);
+        _pendingRequests.Enqueue(Tuple.Create(_configurationManager.CurrentEpoch, request));
         return base.Request(request, context); 
     }
 
@@ -81,7 +83,9 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
     {
         var response = new Accepted();
 
-        if(request.Epoch ==  _state.readTimestamp)
+        _logManager.Logger.Debug("[Paxos]: Received accept request {@0}", request);
+
+        if (request.Epoch ==  _state.readTimestamp)
         {
             response.Status = PaxosResponseStatus.Accept;
             _state.writeTimestamp = request.Epoch;
@@ -91,7 +95,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
         else
         {
             response.Status = PaxosResponseStatus.Reject;
-            _logManager.Logger.Debug("[Paxos]: accept denied");
+            _logManager.Logger.Debug("[Paxos]: Accept rejected");
         }
 
         return Task.FromResult(response);
@@ -112,14 +116,42 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
         return acceptedValue;
     }
 
+
+    private List<LeaseRequest> ProcessPendingRequests() {
+        Tuple<int, LeaseRequest> request;
+        List<LeaseRequest> newValue = new List<LeaseRequest>();
+
+        _logManager.Logger.Debug("[Paxos]: Dequeuing request from epoch {0}", _configurationManager.CurrentEpoch - 1);
+        if (_pendingRequests.Any())
+        {
+            
+            while (_pendingRequests.TryDequeue(out request) && request.Item1 <= _configurationManager.CurrentEpoch - 1) {
+                if (request.Item1 == _configurationManager.CurrentEpoch - 1)
+                {
+                    newValue.Add(request.Item2);
+                }
+            }
+
+            newValue.Sort((x, y) => DateTime.Compare(x.Timestamp.ToDateTime(), y.Timestamp.ToDateTime()));
+        }
+        _logManager.Logger.Debug("[Paxos]: New value {@0}", newValue);
+
+        return newValue;
+    }
+
     public async void RunPaxos() {
-        if (_configurationManager.CurrentState == ServerState.Crashed) { return; }
+
+        _state.value.Clear();
+
+        if (_configurationManager.CurrentState == ServerState.Crashed) {
+            Environment.Exit(0);
+        }
 
         // Check if leader is alive with suspects
         if (CurrentIsLeader())
         {
             _logManager.Logger.Information("[Paxos]: Im a leader, starting epoch {0}", _configurationManager.CurrentEpoch);
-
+            _state.readTimestamp = _configurationManager.CurrentEpoch;
             // Prepare
             _logManager.Logger.Information("[Paxos]: Sending prepare requests...");
             var promises = await _paxosBroadcast.BroadcastWithPhase<PrepareRequest, Promise>(new PrepareRequest {
@@ -130,18 +162,26 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
             var highestAcceptedValue = HighestAcceptedValue(promises);
             
             if (highestAcceptedValue.Any()) {
-                _state.Value = highestAcceptedValue;
+                _state.value = highestAcceptedValue;
             } else {
-                // Propose my own value
-                _logManager.Logger.Debug("[Paxos]: No previous accepted values were found, creating my own value");
-                
+                // My own value will be used
+                _logManager.Logger.Debug("[Paxos]: No previous accepted values were found, using my own value");
+                _state.value = ProcessPendingRequests();
             }
 
-
-            // Order leases
-
-
             // Accept
+            _logManager.Logger.Information("[Paxos]: Sending accept requests...");
+
+            var request = new AcceptRequest
+            {
+                Epoch = _configurationManager.CurrentEpoch
+            };
+            request.Value.Add(_state.value);
+            var accept = await _paxosBroadcast.BroadcastWithPhase<AcceptRequest, Accepted>(request, BroadcastPhase.Accept);
+
+            if (_paxosBroadcast.HasMajority) {
+                _logManager.Logger.Information("[Paxos]: Finished! The choosen value is: {@0}", _state.value);
+            }
 
         }
         else
