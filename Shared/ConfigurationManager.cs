@@ -71,7 +71,7 @@ public class ConfigurationManager
         _identifier = identifier;
         _logManager = logManager;
         _isServer = isServer;
-        _currentSlot = -1;
+        _currentSlot = 0;
 
         _logManager.Logger.Debug("[Config Manager]: Reading path: {0}", configPath);
 

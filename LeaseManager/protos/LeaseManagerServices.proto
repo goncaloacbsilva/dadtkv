@@ -18,6 +18,7 @@ enum PaxosResponseStatus {
 
 message PrepareRequest {
   int32 epoch = 1;
+  string identifier = 2;
 }
 
 message Promise {
@@ -28,7 +29,8 @@ message Promise {
 
 message AcceptRequest {
   int32 epoch = 1;
-  repeated LeaseRequest value = 2;
+  string identifier = 2;
+  repeated LeaseRequest value = 3;
 }
 
 message Accepted {

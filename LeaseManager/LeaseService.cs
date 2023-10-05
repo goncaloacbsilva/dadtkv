@@ -7,6 +7,7 @@ namespace LeaseManager;
 struct PaxosState {
     public int writeTimestamp;
     public int readTimestamp;
+    public string lastPromiseIdentifier;
     public List<LeaseRequest> value;
 }
 
@@ -65,9 +66,10 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
     public override Task<Promise> Prepare(PrepareRequest request, ServerCallContext context)
     {
         _logManager.Logger.Debug("[Paxos]: Received prepare request {@0}", request);
-        if (request.Epoch > _state.readTimestamp) {
+        if (request.Epoch > _state.readTimestamp || (request.Epoch == _state.readTimestamp && string.Compare(request.Identifier, _configurationManager.Identifier) > 0)) {
             _logManager.Logger.Debug("[Paxos]: Updated read timestamp epoch to: {0}", request.Epoch);
             _state.readTimestamp = request.Epoch;
+            _state.lastPromiseIdentifier = request.Identifier;
         }
 
         var promise = new Promise {
@@ -85,7 +87,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
 
         _logManager.Logger.Debug("[Paxos]: Received accept request {@0}", request);
 
-        if (request.Epoch ==  _state.readTimestamp)
+        if (request.Epoch == _state.readTimestamp && request.Identifier.Equals(_state.lastPromiseIdentifier))
         {
             response.Status = PaxosResponseStatus.Accept;
             _state.writeTimestamp = request.Epoch;
@@ -152,10 +154,12 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
         {
             _logManager.Logger.Information("[Paxos]: Im a leader, starting epoch {0}", _configurationManager.CurrentEpoch);
             _state.readTimestamp = _configurationManager.CurrentEpoch;
+            _state.lastPromiseIdentifier = _configurationManager.Identifier;
             // Prepare
             _logManager.Logger.Information("[Paxos]: Sending prepare requests...");
             var promises = await _paxosBroadcast.BroadcastWithPhase<PrepareRequest, Promise>(new PrepareRequest {
-                Epoch = _configurationManager.CurrentEpoch
+                Epoch = _configurationManager.CurrentEpoch,
+                Identifier = _configurationManager.Identifier
             }, BroadcastPhase.Prepare);
 
             // Check if there were promises with accepted values
@@ -174,7 +178,8 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
 
             var request = new AcceptRequest
             {
-                Epoch = _configurationManager.CurrentEpoch
+                Epoch = _configurationManager.CurrentEpoch,
+                Identifier = _configurationManager.Identifier
             };
             request.Value.Add(_state.value);
             var accept = await _paxosBroadcast.BroadcastWithPhase<AcceptRequest, Accepted>(request, BroadcastPhase.Accept);
