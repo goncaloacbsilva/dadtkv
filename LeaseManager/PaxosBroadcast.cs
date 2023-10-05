@@ -13,9 +13,11 @@ public class PaxosBroadcast : BroadcastClient
 {
     private readonly List<LeaseManagerService.LeaseManagerServiceClient> _clients;
     private BroadcastPhase _phase;
+    private bool _hasMajority;
     
     public PaxosBroadcast(ConfigurationManager configurationManager, LogManager logManager) : base(configurationManager, logManager, ServerType.Lease, true)
     {
+        _hasMajority = false;
         _clients = new List<LeaseManagerService.LeaseManagerServiceClient>();
         
         foreach (var channel in _channels)
@@ -27,35 +29,36 @@ public class PaxosBroadcast : BroadcastClient
     public Task<List<TResponse>> BroadcastWithPhase<TRequest, TResponse>(TRequest request, BroadcastPhase phase)
     {
         _phase = phase;
-
-        Func<TResponse, bool> hasMajorityFunction = (response) => true;
+        _hasMajority = false;
         
         int responses = 0;
 
-        switch (phase) {
-            case BroadcastPhase.Prepare:
-                hasMajorityFunction = (response) =>
-                {
-                    responses += 1;
-                    return (responses > (_clients.Count / 2));
-                };
-                break;
-            case BroadcastPhase.Accept:
-                hasMajorityFunction = (response) =>
-                {
-                    
-                    var acceptResponse = response as Accepted;
+        Func<TResponse, bool> checkMajorityFunction = (TResponse response) =>
+        {
+            PaxosResponseStatus status = PaxosResponseStatus.Reject;
 
-                    if (acceptResponse.Type == Accepted.Types.AcceptedType.Accept)
-                    {
-                        responses += 1;
-                    }
-                    return (responses > (_clients.Count / 2));
-                };
-                break;
-        }
+            switch(_phase) {
+                case BroadcastPhase.Prepare:
+                    status = (response as Promise).Status;
+                    break;
+                case BroadcastPhase.Accept:
+                    status = (response as Accepted).Status;
+                    break;
+                default:
+                    throw new Exception("[Paxos Broadcast]: Error: Phase not implemented");
+            }
 
-        return UniformReliableBroadcast<TRequest, TResponse>(request, hasMajorityFunction);
+            if (status == PaxosResponseStatus.Accept)
+            {
+                responses += 1;
+            }
+
+            _hasMajority = (responses > (_clients.Count / 2));
+
+            return _hasMajority;
+        };
+
+        return UniformReliableBroadcast<TRequest, TResponse>(request, checkMajorityFunction);
     }
 
     public override async Task<TResponse> Send<TRequest, TResponse>(int index, TRequest request)
@@ -68,4 +71,6 @@ public class PaxosBroadcast : BroadcastClient
                 throw new Exception("[Paxos Broadcast]: Error: Phase not implemented");
         }
     }
+
+    public bool HasMajority => _hasMajority;
 }

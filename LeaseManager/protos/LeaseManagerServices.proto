@@ -11,13 +11,19 @@ message LeaseRequest {
 message LeaseRequestResponse {
 }
 
+enum PaxosResponseStatus {
+  ACCEPT = 0;
+  REJECT = 1;
+}
+
 message PrepareRequest {
   int32 epoch = 1;
 }
 
 message Promise {
-  int32 writeTimestamp = 1;
-  repeated LeaseRequest value = 2;
+  PaxosResponseStatus status = 1;
+  int32 writeTimestamp = 2;
+  repeated LeaseRequest value = 3;
 }
 
 message AcceptRequest {
@@ -26,11 +32,7 @@ message AcceptRequest {
 }
 
 message Accepted {
-  enum AcceptedType {
-    ACCEPT = 0;
-    REJECT = 1;
-  }
-  AcceptedType type = 1;
+  PaxosResponseStatus status = 1;
 }
 
 service LeaseManagerService {
