@@ -144,6 +144,21 @@ public class ConfigurationManager
             }
         }
 
+
+        // Generate initial state
+
+        var defaultStates = new Dictionary<string, ServerState>();
+        foreach (var serverEntry in _servers)
+        {
+            defaultStates.Add(serverEntry.identifier, ServerState.Normal);
+        }
+
+        _currentState = new TimeSlotState {
+            timeSlot = 0,
+            states = defaultStates,
+            suspects = new List<SuspectPair>()
+        };
+
         _logManager.Logger.Debug("[Config Manager]: Start Time: {0}" , _startTime);
         _logManager.Logger.Debug("[Config Manager]: {0} time slots with {1} milliseconds each", _timeSlots, _slotDuration);
         _logManager.Logger.Debug("[Config Manager]: Parsed {0} servers and {1} states", _servers.Count, _states.Count);
@@ -168,7 +183,11 @@ public class ConfigurationManager
         _logManager.Logger.Verbose("[Configuration Manager][TimeSlots]: Begin Slot {0}, at {1}", _currentSlot, DateTime.Now);
         try
         {
-            _currentState = _states.Find(state => state.timeSlot == _currentSlot);
+            var state = _states.Find(state => state.timeSlot == _currentSlot);
+            if(!state.Equals(default(TimeSlotState)))
+            {
+                _currentState = state;
+            }
             NextSlotEvent(this, new EventArgs());
         }
         catch (Exception e)

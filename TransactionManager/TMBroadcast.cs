@@ -14,8 +14,8 @@ public class TMBroadcast : BroadcastClient
         }
     }
 
-    public override void Send<T>(int index, T request)
+    public override async Task<TResponse> Send<TRequest, TResponse>(int index, TRequest request)
     {
-        _clients[index].RequestAsync(request as LeaseRequest);
+        return (TResponse) Convert.ChangeType(await _clients[index].RequestAsync(request as LeaseRequest), typeof(TResponse)); 
     }
 }

@@ -90,7 +90,7 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             };
 
             leaseRequest.Objects.Add(missingLeases);
-            _tmBroadcast.Broadcast(leaseRequest);
+            _tmBroadcast.Broadcast<LeaseRequest, LeaseRequestResponse>(leaseRequest);
         }
 
         _pendingTransactions.Enqueue(new Transaction

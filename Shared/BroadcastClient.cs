@@ -23,15 +23,36 @@ public abstract class BroadcastClient
         }
     }
 
-    public abstract void Send<T>(int index, T request);
+    public abstract Task<TResponse> Send<TRequest, TResponse>(int index, TRequest request);
 
-    public void Broadcast<T>(T request)
+    public void Broadcast<TRequest, TResponse>(TRequest request)
     {
         for (int i = 0; i < _channels.Count; i++)
         {
-            _logManager.Logger.Debug("[Broadcast Client]: Broadcasting to {0}", _channels[i].Target);
-            Send(i, request);
+            _logManager.Logger.Debug("[Broadcast]: Broadcasting to {0}", _channels[i].Target);
+            Send<TRequest, TResponse>(i, request);
         }
+    }
+
+    public async Task<List<TResponse>> UniformReliableBroadcast<TRequest, TResponse>(TRequest request) {
+        List<Task<TResponse>> sendTasks = new List<Task<TResponse>>();
+
+        
+        for (int i = 0; i < _channels.Count; i++)
+        {
+            _logManager.Logger.Debug("[Broadcast (URB)]: Broadcasting to {0}", _channels[i].Target);
+            sendTasks.Add(Send<TRequest, TResponse>(i, request));
+        }
+
+        // Wait for responses
+        while (sendTasks.Any())
+        {
+            Task<TResponse> finishedTask = await Task.WhenAny(sendTasks);
+            sendTasks.Remove(finishedTask);
+            _logManager.Logger.Debug("[Broadcast (URB)]: Received response {@0}", finishedTask.Result);
+        }
+
+        return sendTasks.Select(task => task.Result).ToList();
     }
 
     public void ShutdownChannels()

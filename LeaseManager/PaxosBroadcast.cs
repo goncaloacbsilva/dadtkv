@@ -24,19 +24,18 @@ public class PaxosBroadcast : BroadcastClient
         }
     }
 
-    public void BroadcastWithPhase<T>(T request, BroadcastPhase phase)
+    public Task<List<TResponse>> BroadcastWithPhase<TRequest, TResponse>(TRequest request, BroadcastPhase phase)
     {
         _phase = phase;
-        Broadcast(request);
+        return UniformReliableBroadcast<TRequest, TResponse>(request);
     }
 
-    public override void Send<T>(int index, T request)
+    public override async Task<TResponse> Send<TRequest, TResponse>(int index, TRequest request)
     {
         switch (_phase)
         {
             case BroadcastPhase.Prepare:
-                _clients[index].Prepare(request as PrepareRequest);
-                break;
+                return (TResponse) Convert.ChangeType(await _clients[index].PrepareAsync(request as PrepareRequest), typeof(TResponse));
             default:
                 throw new Exception("[Paxos Broadcast]: Error: Phase not implemented");
         }
