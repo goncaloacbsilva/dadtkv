@@ -27,7 +27,35 @@ public class PaxosBroadcast : BroadcastClient
     public Task<List<TResponse>> BroadcastWithPhase<TRequest, TResponse>(TRequest request, BroadcastPhase phase)
     {
         _phase = phase;
-        return UniformReliableBroadcast<TRequest, TResponse>(request);
+
+        Func<TResponse, bool> hasMajorityFunction = (response) => true;
+        
+        int responses = 0;
+
+        switch (phase) {
+            case BroadcastPhase.Prepare:
+                hasMajorityFunction = (response) =>
+                {
+                    responses += 1;
+                    return (responses > (_clients.Count / 2));
+                };
+                break;
+            case BroadcastPhase.Accept:
+                hasMajorityFunction = (response) =>
+                {
+                    
+                    var acceptResponse = response as Accepted;
+
+                    if (acceptResponse.Type == Accepted.Types.AcceptedType.Accept)
+                    {
+                        responses += 1;
+                    }
+                    return (responses > (_clients.Count / 2));
+                };
+                break;
+        }
+
+        return UniformReliableBroadcast<TRequest, TResponse>(request, hasMajorityFunction);
     }
 
     public override async Task<TResponse> Send<TRequest, TResponse>(int index, TRequest request)

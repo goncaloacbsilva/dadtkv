@@ -34,7 +34,7 @@ public abstract class BroadcastClient
         }
     }
 
-    public async Task<List<TResponse>> UniformReliableBroadcast<TRequest, TResponse>(TRequest request) {
+    public async Task<List<TResponse>> UniformReliableBroadcast<TRequest, TResponse>(TRequest request, Func<TResponse, bool> hasMajority) {
         List<Task<TResponse>> sendTasks = new List<Task<TResponse>>();
 
         
@@ -50,6 +50,7 @@ public abstract class BroadcastClient
             Task<TResponse> finishedTask = await Task.WhenAny(sendTasks);
             sendTasks.Remove(finishedTask);
             _logManager.Logger.Debug("[Broadcast (URB)]: Received response {@0}", finishedTask.Result);
+            if (hasMajority(finishedTask.Result)) { break; }
         }
 
         return sendTasks.Select(task => task.Result).ToList();
