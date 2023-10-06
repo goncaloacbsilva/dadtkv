@@ -51,6 +51,7 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         return objects;
     }
 
+
     private void ExecuteTx(Transaction tx) {
         var request = tx.request;
 
@@ -108,7 +109,11 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
                 _leases.Add(lease.Key, new Queue<string>());
             }
             foreach(var value in lease.Value.TmIdentifiers)
-                _leases[lease.Key].Enqueue(value);
+            {
+                if (!_leases[lease.Key].Any() || !value.Equals(_leases[lease.Key].Last()))
+                    _leases[lease.Key].Enqueue(value);
+            }
+                
         }
 
         ProcessTransactions();

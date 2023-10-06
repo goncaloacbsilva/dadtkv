@@ -215,10 +215,8 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
                 {
                     dict.Add(obj, new ObjectLeases());
                 }
-                if (!dict[obj].TmIdentifiers.Any() || !dict[obj].TmIdentifiers.Last().Equals(item.TmIdentifier))
-                {
-                    dict[obj].TmIdentifiers.Add(item.TmIdentifier);
-                }   
+                
+                dict[obj].TmIdentifiers.Add(item.TmIdentifier);
             }           
         }
 
