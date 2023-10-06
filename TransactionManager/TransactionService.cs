@@ -51,6 +51,49 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         return objects;
     }
 
+    private void ExecuteTx(Transaction tx) {
+        var request = tx.request;
+
+        // Write values
+        foreach (var entry in request.WriteEntries)
+        {
+            if (_internalDB.TryAdd(entry.Key, entry.Value))
+            {
+                _internalDB[entry.Key] = entry.Value;
+            }
+            _logManager.Logger.Debug("Leases State: object updated to {@0}", entry);
+        }
+        
+        // Read values
+        /* foreach (var key in request.ReadEntries)
+        {
+            Int32 value;
+
+            if (_internalDB.TryGetValue(key, out value))
+            {
+                response.Entries.Add(new DadInt
+                {
+                    Key = key,
+                    Value = value
+                });
+            }
+            else
+            {
+                _logManager.Logger.Warning("Key not found: {0}", key);
+            }
+        } */
+    }
+
+    private void ProcessTransactions() {
+
+        _logManager.Logger.Debug("Checking Leases and executing transactions...");
+        _logManager.Logger.Debug("Leases State: {@0}", _leases);
+        while (_pendingTransactions.Any() && !_pendingTransactions.Peek().requiredLeases.Where(key => !HasLease(key)).ToList().Any()) {
+            // Execute Transaction
+            ExecuteTx(_pendingTransactions.Dequeue());
+        }
+    }
+
     public override Task<LeasesResponse> UpdateLeases(Leases leases, ServerCallContext context)
     {
         var response = new LeasesResponse();
@@ -67,6 +110,8 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             foreach(var value in lease.Value.TmIdentifiers)
                 _leases[lease.Key].Enqueue(value);
         }
+
+        ProcessTransactions();
 
         return Task.FromResult(response);
     }
@@ -99,35 +144,6 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             requiredLeases = requiredObjects
         });
 
-
-        // Write values
-        foreach (var entry in request.WriteEntries)
-        {
-            if (_internalDB.TryAdd(entry.Key, entry.Value))
-            {
-                _internalDB[entry.Key] = entry.Value;
-            }
-        }
-
-        // Read values
-        foreach (var key in request.ReadEntries)
-        {
-            Int32 value;
-
-            if (_internalDB.TryGetValue(key, out value))
-            {
-                response.Entries.Add(new DadInt
-                {
-                    Key = key,
-                    Value = value
-                });
-            }
-            else
-            {
-                _logManager.Logger.Warning("Key not found: {0}", key);
-            }
-        }
-        
         return Task.FromResult(response);
     }
 

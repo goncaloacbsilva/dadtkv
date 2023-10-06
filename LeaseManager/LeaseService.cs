@@ -17,6 +17,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
     private ConfigurationManager _configurationManager;
     private LogManager _logManager;
     private readonly PaxosBroadcast _paxosBroadcast;
+    private readonly LeasesBroadcast _leasesBroadcast;
     private PaxosState _state;
     private Queue<Tuple<int, LeaseRequest>> _pendingRequests;
 
@@ -26,6 +27,8 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
         _configurationManager = configurationManager;
         _logManager = logManager;
         _paxosBroadcast = new PaxosBroadcast(configurationManager, logManager);
+        _leasesBroadcast = new LeasesBroadcast(configurationManager, logManager);
+
         _state.value = new List<LeaseRequest>();
         _pendingRequests = new Queue<Tuple<int, LeaseRequest>>();
         
@@ -186,6 +189,11 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
 
             if (_paxosBroadcast.HasMajority) {
                 _logManager.Logger.Information("[Paxos]: Finished! The choosen value is: {@0}", _state.value);
+                
+                // Broadcast choosen value
+                var leases = new Leases();
+                leases.Leases_.Add(getLeasesOrdered(_state.value));
+                _leasesBroadcast.Broadcast<Leases, LeasesResponse>(leases);
             }
 
         }
@@ -194,4 +202,25 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
             _logManager.Logger.Debug("[Paxos]: Im not a leader");
         }
     }
+    
+    private Dictionary<string, ObjectLeases> getLeasesOrdered(List<LeaseRequest> leases)
+    {
+        Dictionary<string, ObjectLeases> dict = new Dictionary<string, ObjectLeases>();
+
+        foreach (var item in leases)
+        {
+            foreach (var obj in item.Objects)
+            {
+                if (!dict.ContainsKey(obj))
+                {
+                    dict.Add(obj, new ObjectLeases());
+                }
+ 
+                dict[obj].TmIdentifiers.Add(item.TmIdentifier);
+            }           
+        }
+
+        return dict;
+    }
+    
 }
