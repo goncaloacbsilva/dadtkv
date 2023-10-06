@@ -69,10 +69,11 @@ public class ScriptParser
         foreach (var line in lines) {
             switch (line[0])
             {
+                //interprets the lines with # at the beginning as comments
                 case '#':
                     break;
+                //interprets the lines with T at the beginning as Transactions
                 case 'T':
-                    // Transaction
                     var request = ParseTx(line);
                     _logManager.Logger.Debug("[Script]: {@0}", request);
                     
@@ -80,6 +81,7 @@ public class ScriptParser
 
                     _logManager.Logger.Debug("[Script]: {@0}", response);
                     break;
+                //interprets the lines with W at the beginning as waits
                 case 'W':
                     var interval = int.Parse(line.Split(" ")[1]);
                     _logManager.Logger.Debug("[Script]: Wait {0}", interval);

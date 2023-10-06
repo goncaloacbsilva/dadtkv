@@ -12,23 +12,29 @@
 # a character indicating whether it's a (T)ransaction or (L)ease manager
 # and a URL for g-RPC calls.
 P TM1 T http://localhost:3001
-#P TM2 T http://localhost:3002
-P Lease1 L http://localhost:3002
+P TM2 T http://localhost:3002
+P TM3 T http://localhost:3003
+#P TM4 T http://localhost:3009
+P Lease1 L http://localhost:3004
+P Lease2 L http://localhost:3005
+P Lease3 L http://localhost:3006
+#P Lease4 L http://localhost:3007
+#P Lease5 L http://localhost:3008
 #
 # A client (indicated by the 'C' process code) does not have a g-RPC URL,
 # but has a path to the client script it is running.
-P client1 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_01.txt
-P c2 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_01.txt
-# P c3 C one_more_script
-# P c4 C cs4
-# P c5 C cs5
-# P c6 C cs6
+P c1 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_01.txt
+P c2 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_02.txt
+#P c3 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_03.txt
+#P c4 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_02.txt
+#P c5 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_01.txt
+#P c6 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_02.txt
 #
 # this test will run for 100 time slots.
 S 100
 #
 # this test starts at 12:10:15 (physical wall time)
-T 12:10:15
+T 23:14:40
 #
 # Each time slots lasts 10000 miliseconds
 D 10000 
@@ -46,4 +52,5 @@ D 10000
 # - The line ends with a sequence of pairs indentifying suspected processes
 # each pair includes the ids of the suspecting process and the suspected process,
 # e.g. (A,B) means that process A suspects process B
-F 1 N N
+#F 2 N N N N N N N (Lease2,Lease1)
+#F 3 N N N N N N N (Lease3,Lease2) (Lease3,Lease1)

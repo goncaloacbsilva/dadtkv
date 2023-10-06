@@ -76,12 +76,14 @@ public class ConfigurationManager
         _logManager.Logger.Debug("[Config Manager]: Reading path: {0}", configPath);
 
         foreach (var line in lines) {
+            //interprets the lines with # at the beginning as comments
             if (line[0] != '#')
             {
                 var command = line.Split(" ");
                 
                 switch (command[0])
                 {
+                    //interprets the lines with P at the beginning as processes
                     case "P":
                         // Ignore client processes
                         if (command[2] != "C")
@@ -97,9 +99,11 @@ public class ConfigurationManager
                             });
                         }
                         break;
+                    //interprets the lines with S at the beginning as time slots
                     case "S":
                         _timeSlots = int.Parse(command[1]);
                         break;
+                    //interprets the lines with T at the beginning as the start time
                     case "T":
                         if (!DateTime.TryParse(command[1], out _startTime))
                         {
@@ -107,9 +111,11 @@ public class ConfigurationManager
                             Environment.Exit(1);
                         }
                         break;
+                    //interprets the lines with D at the beginning as the duration of each time slot
                     case "D":
                         _slotDuration = int.Parse(command[1]);
                         break;
+                    //interprets the lines with F at the beginning as the state of server processes
                     case "F":
                         int timeSlot = int.Parse(command[1]);
                         var states = new Dictionary<string, ServerState>();

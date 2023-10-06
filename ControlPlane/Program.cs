@@ -1,9 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using System;
-using System.Diagnostics;
-using System.IO;
-using Shared;
+﻿using System.Diagnostics;
 
 public enum ShowConsole
 {
@@ -19,7 +14,7 @@ class Program
     {
         Process process = new Process();
         ProcessStartInfo startInfo = new ProcessStartInfo();
-        //change file path
+        //file path to Client.exe
         startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\Client\app\Client.exe";
         startInfo.Arguments = string.Join(" ", args);
         if (showConsole == ShowConsole.CLIENT || showConsole == ShowConsole.ALL)
@@ -40,7 +35,7 @@ class Program
         {
             Process process = new Process();
             ProcessStartInfo startInfo = new ProcessStartInfo();
-            //change file path
+            //file path to TransactionManager.exe
             startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\TransactionManager\app\TransactionManager.exe";
             startInfo.Arguments = string.Join(" ", args);
             if (showConsole == ShowConsole.TRANSACTION || showConsole == ShowConsole.ALL) 
@@ -64,7 +59,7 @@ class Program
     {
         Process process = new Process();
         ProcessStartInfo startInfo = new ProcessStartInfo();
-        //change file path
+        //file path to LeaseManager.exe
         startInfo.FileName = @"C:\Users\renat\Desktop\dadtkv\LeaseManager\app\LeaseManager.exe";
         startInfo.Arguments = string.Join(" ", args);
         if (showConsole == ShowConsole.LEASE || showConsole == ShowConsole.ALL)
@@ -86,19 +81,23 @@ class Program
 
         foreach (var line in lines)
         {
+            //interprets the lines with # as comments
             if (line[0] != '#')
             {
                 var command = line.Split(" ");
 
                 switch (command[0])
                 {
+                    //interprets the lines with P at the beginning as processes
                     case "P":
+                        //sees if it is a client process
                         if (command[2] == "C")
                         {
                             string[] args = { filePath, command[1], command[3] };
                             Console.WriteLine("Launching client");
                             launchClient(args, showConsole);
                         }
+                        //sees if it is a transaction manager process
                         else if (command[2] == "T")
                         {
                             Console.WriteLine("Launching TM");
@@ -111,6 +110,7 @@ class Program
 
                             launchTransactionManager(args.ToArray(), showConsole);
                         }
+                        //sees if it is a lease manager process
                         else if (command[2] == "L")
                         {
                             Console.WriteLine("Launching Lease");
@@ -132,10 +132,17 @@ class Program
     {
         Program pm = new Program();
         //change file path
-        string filePath = "C:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt";
+        //string filePath = "C:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt";
         Console.WriteLine("Introduce the path to the configuration file");
-        //Console.ReadLine();
-        pm.fileReader(filePath,ShowConsole.LEASE);
+        string filePath = Console.ReadLine();
+
+        //change showconsole between the following modes:
+        //TRANSACTION to open individual windows for each transaction manager
+        //LEASE to open individual windows for each lease manager
+        //CLIENT to open individual windows for each client
+        //ALL to open individual windows for all the processes
+        pm.fileReader(filePath,ShowConsole.CLIENT);
+
         Console.WriteLine("Press Enter to shutdown");
         while (Console.ReadKey(true).Key != ConsoleKey.Enter)
         {

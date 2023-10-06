@@ -1,6 +1,5 @@
 ﻿using Grpc.Core;
 using Grpc.Core.Interceptors;
-using Serilog;
 using Serilog.Events;
 using Shared;
 using TransactionManager;
@@ -10,7 +9,7 @@ public class Program
     static void Main(string[] args)
     {
 
-        if (args.Length < 3)
+        if (args.Length < 4)
         {
             Console.WriteLine("ERROR: Arguments required");
             return;
@@ -23,6 +22,8 @@ public class Program
         string address = args[2];
         int port = int.Parse(args[3]);
 
+        //change log level information to see more or less information
+        //debug to see all information or information to only see relevat information
         var logManager = new LogManager(identifier, LogEventLevel.Debug);
         var configurationManager = new ConfigurationManager(configPath, identifier, true, logManager);
         var server = new Server

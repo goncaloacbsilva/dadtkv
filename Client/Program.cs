@@ -1,8 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using Client;
-using Grpc.Core;
-using Serilog.Core;
+﻿using Client;
 using Serilog.Events;
 using Shared;
 
@@ -17,7 +13,9 @@ public class Program
         string identifier = args[1];
         string scriptPath = args[2];
 
-        var logManager = new LogManager(identifier, LogEventLevel.Information);
+        //change log level information to see more or less information
+        //debug to see all information or information to only see relevat information
+        var logManager = new LogManager(identifier, LogEventLevel.Debug);
         ConfigurationManager configurationManager = new ConfigurationManager(configPath, identifier, false, logManager);
         ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers(), logManager);
         ScriptParser parser = new ScriptParser(scriptPath, connectionManager, identifier, logManager);

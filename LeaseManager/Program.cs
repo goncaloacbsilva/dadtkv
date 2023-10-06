@@ -8,7 +8,7 @@ public class Program
     static void Main(string[] args)
     {
 
-        if (args.Length < 2)
+        if (args.Length < 4)
         {
             Console.WriteLine("ERROR: Arguments required");
             return;
@@ -20,8 +20,9 @@ public class Program
         string identifier = args[1];
         string address = args[2];
         int port = int.Parse(args[3]);
-        
 
+        //change log level information to see more or less information
+        //debug to see all information or information to only see relevat information
         var logManager = new LogManager(identifier, LogEventLevel.Debug);
 
         var configurationManager = new ConfigurationManager(configPath, identifier, true, logManager);

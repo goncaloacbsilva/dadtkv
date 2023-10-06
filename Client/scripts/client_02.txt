@@ -12,14 +12,13 @@
 # the read set is just a list of string keys
 # the write set contains keys and values
 # both the read set and write set can be empty but the parenthesis will still be in the command
-# wait command (in milliseconds)
 # -----------------------------------------------------------------------------------------------
-T () (<"A",10>)
-W 2000
-T ("A") (<"B",9>)
-# A=10
-W 9000
+T () (<"B",10>)
+W 3000
+T ("B") (<"A",20>)
+# B = 9
+W 10000
 # Epoca 2
-T ("A","B") (<"C",9>)
-#A=20 , B= 1
+T ("B","C") (<"C",11>)
+# B=1 ,C=11
 W 100000

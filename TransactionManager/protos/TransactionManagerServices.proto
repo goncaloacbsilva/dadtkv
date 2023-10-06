@@ -31,11 +31,20 @@ message StatusResponse {
   bool status = 1;
 }
 
+message SyncRequest {
+  repeated DadInt updateEntries = 1;
+  repeated string dequeueObjects = 2;
+}
+
+message SyncResponse {}
 
 
 service TransactionManagerService {
   rpc TxSubmit(TxSubmitRequest) returns (TxSubmitResponse);
   rpc Status(TxStatusRequest) returns (StatusResponse);
+
+  // TM Services RPCs
+  rpc SyncTransaction(SyncRequest) returns (SyncResponse);
   
   // Leases service RPCs
   rpc UpdateLeases(Leases) returns (LeasesResponse);
