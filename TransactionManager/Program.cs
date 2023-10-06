@@ -23,7 +23,7 @@ public class Program
         string address = args[2];
         int port = int.Parse(args[3]);
 
-        var logManager = new LogManager(identifier, LogEventLevel.Information);
+        var logManager = new LogManager(identifier, LogEventLevel.Debug);
         var configurationManager = new ConfigurationManager(configPath, identifier, true, logManager);
         var server = new Server
         {
