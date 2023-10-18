@@ -134,12 +134,12 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         _logManager.Logger.Information("[ExecTx]: {@0}", _leases);
 
         var syncRequest = new SyncRequest();
-        
+
         syncRequest.UpdateEntries.Add(request.WriteEntries);
         syncRequest.DequeueObjects.Add(leasesToDequeue);
-        
+
         _logManager.Logger.Information("[Transaction]: SYNC TX Broadcast: {@0}", syncRequest);
-        
+
         // Broadcast sync transaction request
         _transactionSyncBroadcast.Broadcast<SyncRequest, SyncResponse>(syncRequest);
 
@@ -150,8 +150,8 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
     {
         var response = new LeasesResponse();
 
-        _logManager.Logger.Debug("Updating leases");
 
+        _logManager.Logger.Information("[Update Leases Request]: {@0}", leases.Leases_);
 
         var oldLeases = new Dictionary<string, Queue<string>>(_leases);
 
@@ -169,19 +169,16 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
                 
                 if (isfirst && _leases[lease.Key].Any() && !value.Equals(_leases[lease.Key].Last()))
                 {
-                    Console.WriteLine();
-                    Console.WriteLine(value);
-                    Console.WriteLine();
                     _leases[lease.Key].Dequeue();
                     _leases[lease.Key].Enqueue(value);
 
-                    var syncRequest = new SyncRequest();
+                    /*var syncRequest = new SyncRequest();
                     syncRequest.DequeueObjects.Add(lease.Key);
 
                     _logManager.Logger.Information("[UpdateLeases Conflict]: SYNC TX Broadcast: {@0}", syncRequest);
 
                     // Broadcast sync transaction request
-                    _transactionSyncBroadcast.Broadcast<SyncRequest, SyncResponse>(syncRequest);
+                    _transactionSyncBroadcast.Broadcast<SyncRequest, SyncResponse>(syncRequest);*/
 
                     isfirst = false;
                 }
@@ -189,11 +186,12 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
                     || !_leases[lease.Key].Any())
                 {
                     _leases[lease.Key].Enqueue(value);
+                    isfirst = false;
                 }
             }
                 
         }
-        _logManager.Logger.Information("[Update Leases]: {@0}", _leases);
+        _logManager.Logger.Information("[Current Leases State]: {@0}", _leases);
 
         return Task.FromResult(response);
     }
@@ -244,7 +242,12 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         _pendingTransactions.Add(transactionTask);
         _pendingTransactionsObjects.Enqueue(tx);
 
-        return await tcs.Task;
+
+        var response = await tcs.Task;
+
+        _logManager.Logger.Information("[TX RESULT RESPONSE]: {@0}", response);
+
+        return response;
     }
 
     public override Task<StatusResponse> Status(TxStatusRequest request, ServerCallContext context)

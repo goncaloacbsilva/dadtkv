@@ -77,9 +77,9 @@ public class ScriptParser
                     var request = ParseTx(line);
                     _logManager.Logger.Debug("[Script]: {@0}", request);
                     
-                    var response = _connectionManager.HandleRPCCall(() => _connectionManager.Client.TxSubmit(request));
-
-                    _logManager.Logger.Debug("[Script]: {@0}", response);
+                    _connectionManager.HandleRPCCall<TxSubmitResponse>(async () => {
+                        return (TxSubmitResponse)Convert.ChangeType(await _connectionManager.Client.TxSubmitAsync(request), typeof(TxSubmitResponse));
+                    });
                     break;
                 //interprets the lines with W at the beginning as waits
                 case 'W':

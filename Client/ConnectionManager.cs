@@ -36,8 +36,13 @@ public class ConnectionManager
 
         if (random)
         {
-            Random rnd = new Random();
-            _nextTM = rnd.Next(0, _servers.Count - 1);
+            /* Random rnd = new Random();
+            _nextTM = rnd.Next(0, _servers.Count - 1); */
+            if (_logManager.Identifier.Equals("c3")) {
+                _nextTM = 1;
+            } else {
+                _nextTM = 0;
+            }
         }
         
         var address = _servers[_nextTM];
@@ -61,7 +66,7 @@ public class ConnectionManager
         }
     }
 
-    public T HandleRPCCall<T>(Func<T> rpcAction)
+    public async Task HandleRPCCall<T>(Func<Task<T>> rpcAction)
     {
         bool gotResponse = false;
         
@@ -70,6 +75,8 @@ public class ConnectionManager
             GetNewConnection(true);
         }
 
+        _attempts = 0;
+
         do
         {
             try
@@ -77,12 +84,12 @@ public class ConnectionManager
                 _attempts++;
                 
                 _logManager.Logger.Debug("[RPCCall]: Sending request... (Attempt {0})", _attempts);
-                var response = rpcAction();
+                var response = await rpcAction();
+
+                _logManager.Logger.Debug("[RPCCall Response]: {@0}", response);
                 
                 gotResponse = true;
                 _attempts = 0;
-
-                return response;
             }
             catch (Exception e)
             {
@@ -97,8 +104,6 @@ public class ConnectionManager
                 GetNewConnection(false);
             }
         } while (!gotResponse);
-
-        return default(T);
     }
 
     public TransactionManagerService.TransactionManagerServiceClient Client => _client;
