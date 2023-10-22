@@ -71,18 +71,33 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         }
     }
 
-    private HashSet<string> FreeLeases(Transaction tx) {
+    private bool NextTxNeeds(string obj) {
+        _logManager.Logger.Debug("Transaction Objects: {@0}", _pendingTransactionsObjects);
+        if (_pendingTransactionsObjects.Count > 1) {
+            var tx = _pendingTransactionsObjects.ElementAt(1);
+            return tx.requiredLeases.Contains(obj);
+        }
+
+        return false;
+    }
+
+    // Returns (<objects to dequeue>, <objects to request again>)
+    private (HashSet<string>, HashSet<string>) FreeLeases(Transaction tx) {
         HashSet<string> leasesToDequeue = new HashSet<string>();
+        HashSet<string> requestObjects = new HashSet<string>();
+
         foreach (var key in tx.requiredLeases) {
-            var nextTm = _leases[key].ElementAtOrDefault(1);
-            if (nextTm != default(string))
-            {
+            if (_leases[key].Count > 1) {
                 _leases[key].Dequeue();
                 leasesToDequeue.Add(key);
+
+                if (NextTxNeeds(key)) {
+                    requestObjects.Add(key);
+                }
             }
         }
 
-        return leasesToDequeue;
+        return (leasesToDequeue, requestObjects);
     }
 
     private void WriteObjects(List<DadInt> values) {
@@ -129,19 +144,31 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
 
         _logManager.Logger.Debug("[Transaction]: Freeing leases");
 
-        var leasesToDequeue = FreeLeases(tx);
+        (var leasesToDequeue, var requestObjects) = FreeLeases(tx);
 
         _logManager.Logger.Information("[ExecTx]: {@0}", _leases);
 
-        var syncRequest = new SyncRequest();
+        _logManager.Logger.Debug("[Transaction]: Leases to Dequeue {@0}", leasesToDequeue);
+        _logManager.Logger.Debug("[Transaction]: Leases to Request Again {@0}", requestObjects);
 
+        var syncRequest = new SyncRequest();
+        var leaseRequest = new LeaseRequest
+        {
+            TmIdentifier = _configurationManager.Identifier,
+            Timestamp = Timestamp.FromDateTime(DateTime.UtcNow)
+        };
+
+
+        leaseRequest.Objects.Add(requestObjects);
         syncRequest.UpdateEntries.Add(request.WriteEntries);
         syncRequest.DequeueObjects.Add(leasesToDequeue);
 
         _logManager.Logger.Information("[Transaction]: SYNC TX Broadcast: {@0}", syncRequest);
+        _logManager.Logger.Information("[Transaction]: REQUEST LEASES Broadcast: {@0}", leaseRequest);
 
         // Broadcast sync transaction request
         _transactionSyncBroadcast.Broadcast<SyncRequest, SyncResponse>(syncRequest);
+        _leaseRequestBroadcast.Broadcast<LeaseRequest, LeaseRequestResponse>(leaseRequest);
 
         return response;
     }
@@ -150,13 +177,8 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
     {
         var response = new LeasesResponse();
 
-
         _logManager.Logger.Information("[Update Leases Request]: {@0}", leases.Leases_);
 
-        var oldLeases = new Dictionary<string, Queue<string>>(_leases);
-
-        //add new leases to object queues eleminating objects
-        //that are sequencially duplicated
         foreach (var lease in leases.Leases_)
         {
             if (!_leases.ContainsKey(lease.Key))
@@ -164,32 +186,24 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
                 _leases.Add(lease.Key, new Queue<string>());
             }
             bool isfirst = true;
-            foreach(var value in lease.Value.TmIdentifiers)
+            foreach (var value in lease.Value.TmIdentifiers)
             {
-                
+
                 if (isfirst && _leases[lease.Key].Any() && !value.Equals(_leases[lease.Key].Last()))
                 {
                     _leases[lease.Key].Dequeue();
                     _leases[lease.Key].Enqueue(value);
 
-                    /*var syncRequest = new SyncRequest();
-                    syncRequest.DequeueObjects.Add(lease.Key);
-
-                    _logManager.Logger.Information("[UpdateLeases Conflict]: SYNC TX Broadcast: {@0}", syncRequest);
-
-                    // Broadcast sync transaction request
-                    _transactionSyncBroadcast.Broadcast<SyncRequest, SyncResponse>(syncRequest);*/
-
                     isfirst = false;
                 }
-                else if ((_leases[lease.Key].Any() && !value.Equals(_leases[lease.Key].Last())) 
+                else if ((_leases[lease.Key].Any() && !value.Equals(_leases[lease.Key].Last()))
                     || !_leases[lease.Key].Any())
                 {
                     _leases[lease.Key].Enqueue(value);
                     isfirst = false;
                 }
             }
-                
+
         }
         _logManager.Logger.Information("[Current Leases State]: {@0}", _leases);
 
@@ -213,6 +227,7 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
 
         _logManager.Logger.Debug("Received TxSubmit from {0}", request.ClientId);
         _logManager.Logger.Information("[TXSUBMIT]: {@0}", request);
+
 
         // Acquire Leases
         var requiredObjects = GetObjects(request);

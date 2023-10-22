@@ -2,6 +2,7 @@ using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Shared;
+using System.Runtime.InteropServices;
 
 namespace LeaseManager;
 
@@ -122,82 +123,6 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
         return acceptedValue;
     }
 
-    // For swaping Txs
-    public static void Swap<T>(IList<T> list, int indexA, int indexB)
-    {
-        T tmp = list[indexA];
-        list[indexA] = list[indexB];
-        list[indexB] = tmp;
-    }
-
-    class LeasesTable
-    {
-        Dictionary<string, string> leases;
-
-        public LeasesTable()
-        {
-            leases = new Dictionary<string, string>();
-        }
-
-        public void UpdateTable(LeaseRequest request)
-        {
-            foreach (var obj in request.Objects)
-            {
-                if (leases.TryAdd(obj, request.TmIdentifier))
-                {
-                    leases[obj] = request.TmIdentifier;
-                }
-            }
-        }
-
-        public bool HasConflicts(LeaseRequest request, string prevID)
-        {
-            foreach (var obj in request.Objects)
-            {
-                string value;
-                if (leases.TryGetValue(obj, out value))
-                {
-                    if (value.Equals(prevID))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-    }
-
-    // Recreate timeline without consecutive Tm leases
-    private List<LeaseRequest> RewriteTxsTimeline(List<LeaseRequest> leases)
-    {
-        List<LeaseRequest> withoutConsecutives = new List<LeaseRequest>(leases);
-        LeasesTable leasesTable = new LeasesTable();
-
-
-        int consecutives = 0;
-        LeaseRequest prevRequest = null;
-        for (int i = 0; i < withoutConsecutives.Count; i++)
-        {
-            if (prevRequest == null || !prevRequest.TmIdentifier.Equals(withoutConsecutives[i].TmIdentifier))
-            {
-                if (prevRequest != null && leasesTable.HasConflicts(withoutConsecutives[i], prevRequest.TmIdentifier) && consecutives > 0)
-                {
-                    Swap(withoutConsecutives, i - consecutives, i);
-                    i = i - consecutives + 1;
-                }
-                consecutives = 0;
-            }
-            else
-            {
-                consecutives++;
-            }
-            prevRequest = withoutConsecutives[i];
-            leasesTable.UpdateTable(withoutConsecutives[i]);
-        }
-
-        return withoutConsecutives;
-    }
 
     private List<LeaseRequest> ProcessPendingRequests() {
         Tuple<int, LeaseRequest> request;
@@ -250,8 +175,8 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
             } else {
                 // My own value will be used
                 _logManager.Logger.Debug("[Paxos]: No previous accepted values were found, using my own value");
-                _state.value = RewriteTxsTimeline(ProcessPendingRequests());
-                _logManager.Logger.Information("[RewriteTxsTimeline]: {@0}", _state.value);
+                _state.value = ProcessPendingRequests();
+                _logManager.Logger.Debug("[Generated Value]: {@0}", _state.value);
             }
 
             // Accept
@@ -271,6 +196,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
                 // Broadcast choosen value
                 var leases = new Leases();
                 leases.Leases_.Add(getLeasesOrdered(_state.value));
+                _logManager.Logger.Debug("[leases]: {0}", leases.Leases_);
                 _leasesBroadcast.Broadcast<Leases, LeasesResponse>(leases);
             }
 
@@ -293,7 +219,6 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
                 {
                     dict.Add(obj, new ObjectLeases());
                 }
-                
                 dict[obj].TmIdentifiers.Add(item.TmIdentifier);
             }           
         }

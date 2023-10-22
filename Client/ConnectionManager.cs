@@ -25,8 +25,21 @@ public class ConnectionManager
         _maxAttempts = servers.Count * 2;
         _logManager = logManager;
     }
+
+    public int GetTMIndex() {
+
+        int hash = 0;
+
+        foreach (char c in _logManager.Identifier) {
+            hash += (int)c;
+        }
+
+        int hashCode = Math.Abs(hash);
+
+        return (hashCode % (_servers.Count + 1));
+    } 
     
-    private void GetNewConnection(bool random)
+    private void GetNewConnection(bool init)
     {
         if (_channel != null)
         {
@@ -34,17 +47,11 @@ public class ConnectionManager
             _channel.ShutdownAsync().Wait();
         }
 
-        if (random)
+        if (init)
         {
-            /* Random rnd = new Random();
-            _nextTM = rnd.Next(0, _servers.Count - 1); */
-            if (_logManager.Identifier.Equals("c3")) {
-                _nextTM = 1;
-            } else {
-                _nextTM = 0;
-            }
+            _nextTM = GetTMIndex();
         }
-        
+
         var address = _servers[_nextTM];
 
         try

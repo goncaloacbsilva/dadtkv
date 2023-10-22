@@ -15,11 +15,13 @@ public class Program
 
         //change log level information to see more or less information
         //debug to see all information or information to only see relevat information
-        var logManager = new LogManager(identifier, LogEventLevel.Debug);
+        var logManager = new LogManager(identifier, LogEventLevel.Information);
         ConfigurationManager configurationManager = new ConfigurationManager(configPath, identifier, false, logManager);
         ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers(), logManager);
         ScriptParser parser = new ScriptParser(scriptPath, connectionManager, identifier, logManager);
         
+
+        logManager.Logger.Debug("Select Server with index: {0}", connectionManager.GetTMIndex());
         configurationManager.WaitForTestStart();
         
         parser.Run();
