@@ -43,8 +43,10 @@ public class ConnectionManager
     {
         if (_channel != null)
         {
+            
+            _logManager.Logger.Debug("[Connection Manager]: Closing channel...");
             // Shutdown before connect to a new channel
-            _channel.ShutdownAsync().Wait();
+            _channel.ShutdownAsync();
         }
 
         if (init)
@@ -90,17 +92,17 @@ public class ConnectionManager
             {
                 _attempts++;
                 
-                _logManager.Logger.Debug("[RPCCall]: Sending request... (Attempt {0})", _attempts);
+                _logManager.Logger.Information("[RPCCall]: Sending request... (Attempt {0})", _attempts);
                 var response = await rpcAction();
 
-                _logManager.Logger.Debug("[RPCCall Response]: {@0}", response);
+                _logManager.Logger.Information("[RPCCall Response]: {@0}", response);
                 
                 gotResponse = true;
                 _attempts = 0;
             }
             catch (Exception e)
             {
-                _logManager.Logger.Error("[RPCCall Error]: {0}", e);
+                _logManager.Logger.Error("[RPCCall Error]: {0}", e.Message);
 
                 if (_attempts >= _maxAttempts)
                 {

@@ -75,16 +75,26 @@ public class ScriptParser
                 //interprets the lines with T at the beginning as Transactions
                 case 'T':
                     var request = ParseTx(line);
-                    _logManager.Logger.Debug("[Script]: {@0}", request);
+                    _logManager.Logger.Information("[RPCCall Request]: {@0}", request);
                     
                     _connectionManager.HandleRPCCall<TxSubmitResponse>(async () => {
                         return (TxSubmitResponse)Convert.ChangeType(await _connectionManager.Client.TxSubmitAsync(request), typeof(TxSubmitResponse));
                     });
                     break;
+                case 'S':
+                    var statusRequest = new StatusRequest {
+                        IsFromClient = true,
+                    };
+                    _logManager.Logger.Information("[RPCCall Request]: {@0}", statusRequest);
+                    
+                    _connectionManager.HandleRPCCall<StatusResponse>(async () => {
+                        return (StatusResponse)Convert.ChangeType(await _connectionManager.Client.StatusAsync(statusRequest), typeof(StatusResponse));
+                    });
+                    break;
                 //interprets the lines with W at the beginning as waits
                 case 'W':
                     var interval = int.Parse(line.Split(" ")[1]);
-                    _logManager.Logger.Debug("[Script]: Wait {0}", interval);
+                    _logManager.Logger.Information("[Script]: Wait {0}", interval);
                     System.Threading.Thread.Sleep(interval);
                     break;
             }

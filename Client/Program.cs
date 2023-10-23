@@ -15,7 +15,7 @@ public class Program
 
         //change log level information to see more or less information
         //debug to see all information or information to only see relevat information
-        var logManager = new LogManager(identifier, LogEventLevel.Information);
+        var logManager = new LogManager(identifier, LogEventLevel.Debug);
         ConfigurationManager configurationManager = new ConfigurationManager(configPath, identifier, false, logManager);
         ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers(), logManager);
         ScriptParser parser = new ScriptParser(scriptPath, connectionManager, identifier, logManager);
@@ -25,6 +25,5 @@ public class Program
         configurationManager.WaitForTestStart();
         
         parser.Run();
-
     }
 }

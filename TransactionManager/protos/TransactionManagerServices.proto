@@ -25,7 +25,9 @@ message TxSubmitResponse {
   repeated DadInt entries = 1;
 }
 
-message TxStatusRequest {};
+message StatusRequest {
+  bool isFromClient = 1;
+};
 
 message StatusResponse {
   bool status = 1;
@@ -36,12 +38,13 @@ message SyncRequest {
   repeated string dequeueObjects = 2;
 }
 
-message SyncResponse {}
-
+message SyncResponse {
+  bool status = 1;
+}
 
 service TransactionManagerService {
   rpc TxSubmit(TxSubmitRequest) returns (TxSubmitResponse);
-  rpc Status(TxStatusRequest) returns (StatusResponse);
+  rpc Status(StatusRequest) returns (StatusResponse);
 
   // TM Services RPCs
   rpc SyncTransaction(SyncRequest) returns (SyncResponse);

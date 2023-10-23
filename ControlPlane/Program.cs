@@ -132,16 +132,16 @@ class Program
     {
         Program pm = new Program();
         //change file path
-        //string filePath = "C:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt";
-        Console.WriteLine("Introduce the path to the configuration file");
-        string filePath = Console.ReadLine();
+        string filePath = "C:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt";
+        //Console.WriteLine("Introduce the path to the configuration file");
+        //string filePath = Console.ReadLine();
 
         //change showconsole between the following modes:
         //TRANSACTION to open individual windows for each transaction manager
         //LEASE to open individual windows for each lease manager
         //CLIENT to open individual windows for each client
         //ALL to open individual windows for all the processes
-        pm.fileReader(filePath,ShowConsole.CLIENT);
+        pm.fileReader(filePath,ShowConsole.TRANSACTION);
 
         Console.WriteLine("Press Enter to shutdown");
         while (Console.ReadKey(true).Key != ConsoleKey.Enter)

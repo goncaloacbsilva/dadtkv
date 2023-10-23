@@ -3,6 +3,10 @@ using Serilog.Core;
 
 namespace Shared;
 
+public interface AbstractBroadcastRPC<TRequest, TResponse> {
+    Task<TResponse> Send(int index, TRequest request);
+}
+
 public abstract class BroadcastClient
 {
     protected List<Channel> _channels;

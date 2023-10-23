@@ -34,7 +34,7 @@ P c2 C C:\Users\renat\Desktop\dadtkv\Client\scripts\client_02.txt
 S 100
 #
 # this test starts at 12:10:15 (physical wall time)
-T 23:14:40
+T 00:36:00
 #
 # Each time slots lasts 10000 miliseconds
 D 10000 
@@ -52,5 +52,5 @@ D 10000
 # - The line ends with a sequence of pairs indentifying suspected processes
 # each pair includes the ids of the suspecting process and the suspected process,
 # e.g. (A,B) means that process A suspects process B
-#F 2 N N N N N N N (Lease2,Lease1)
-#F 3 N N N N N N N (Lease3,Lease2) (Lease3,Lease1)
+F 2 N C N N N N
+#F 3 N N N N N N (Lease3,Lease2) (Lease3,Lease1)

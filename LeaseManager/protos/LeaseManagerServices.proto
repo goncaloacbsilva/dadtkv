@@ -37,8 +37,15 @@ message Accepted {
   PaxosResponseStatus status = 1;
 }
 
+message LMStatusRequest {}
+
+message LMStatusResponse {
+  bool status = 1;
+}
+
 service LeaseManagerService {
   rpc Request(LeaseRequest) returns (LeaseRequestResponse);
   rpc Prepare(PrepareRequest) returns (Promise);
   rpc Accept(AcceptRequest) returns (Accepted);
+  rpc Status(LMStatusRequest) returns (LMStatusResponse);
 }

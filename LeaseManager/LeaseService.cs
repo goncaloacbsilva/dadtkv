@@ -39,7 +39,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
 
     public override Task<LeaseRequestResponse> Request(LeaseRequest request, ServerCallContext context)
     {
-        _logManager.Logger.Debug("Received: {@0}", request);
+        _logManager.Logger.Information("[Lease Request]: {@0}", request);
         _pendingRequests.Enqueue(Tuple.Create(_configurationManager.CurrentEpoch, request));
         return base.Request(request, context); 
     }
@@ -70,7 +70,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
 
     public override Task<Promise> Prepare(PrepareRequest request, ServerCallContext context)
     {
-        _logManager.Logger.Debug("[Paxos]: Received prepare request {@0}", request);
+        _logManager.Logger.Information("[Paxos]: Received prepare request {@0}", request);
         if (request.Epoch > _state.readTimestamp || (request.Epoch == _state.readTimestamp && string.Compare(request.Identifier, _configurationManager.Identifier) > 0)) {
             _logManager.Logger.Debug("[Paxos]: Updated read timestamp epoch to: {0}", request.Epoch);
             _state.readTimestamp = request.Epoch;
@@ -90,7 +90,7 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
     {
         var response = new Accepted();
 
-        _logManager.Logger.Debug("[Paxos]: Received accept request {@0}", request);
+        _logManager.Logger.Information("[Paxos]: Received accept request {@0}", request);
 
         if (request.Epoch == _state.readTimestamp && request.Identifier.Equals(_state.lastPromiseIdentifier))
         {
@@ -146,6 +146,20 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
         return newValue;
     }
 
+    public override Task<LMStatusResponse> Status(LMStatusRequest request, ServerCallContext context)
+    {
+        var currentIsLeader = CurrentIsLeader();
+
+        _logManager.Logger.Information("\n============================[Status]===========================\n"+
+            "Current Lease Manager is Leader: {0}\n" +
+            "===============================================================\n" +
+            "Paxos State: {@1}\n" +
+            "===============================================================\n", currentIsLeader, _state
+        );
+
+        return Task.FromResult(new LMStatusResponse());
+    }
+
     public async void RunPaxos() {
 
         _state.value.Clear();
@@ -191,19 +205,21 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
             var accept = await _paxosBroadcast.BroadcastWithPhase<AcceptRequest, Accepted>(request, BroadcastPhase.Accept);
 
             if (_paxosBroadcast.HasMajority) {
-                _logManager.Logger.Information("[Paxos]: Finished! The choosen value is: {@0}", _state.value);
                 
                 // Broadcast choosen value
                 var leases = new Leases();
                 leases.Leases_.Add(getLeasesOrdered(_state.value));
-                _logManager.Logger.Debug("[leases]: {0}", leases.Leases_);
+
+                _logManager.Logger.Information("[Paxos]: Finished! The choosen value is: {@0}", leases.Leases_);
                 _leasesBroadcast.Broadcast<Leases, LeasesResponse>(leases);
+            } else {
+                _logManager.Logger.Error("[Paxos]: Failed to get a majority! The value will not be commited");
             }
 
         }
         else
         {
-            _logManager.Logger.Debug("[Paxos]: Im not a leader");
+            _logManager.Logger.Information("[Paxos]: Im not a leader");
         }
     }
     

@@ -38,9 +38,17 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         _configurationManager = configurationManager;
         _logManager = logManager;
 
+        _configurationManager.NextSlotEvent += (sender, args) => { CheckState(); };
+
         _transactionWorker = new TransactionsWorker(_pendingTransactions, _pendingTransactionsObjects, _logManager);
         
         Task.Run(() => _transactionWorker.Start());
+    }
+
+    private void CheckState() {
+        if (_configurationManager.CurrentState == ServerState.Crashed) {
+            Environment.Exit(0);
+        }
     }
 
     private bool HasLease(string key)
@@ -120,6 +128,8 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         // Await to aquire leases
         await AquireLeases(tx);
 
+        _logManager.Logger.Information("[Transactions Worker]: ExecutingTx: {@0}", request);
+
         // Read values
         foreach (var key in request.ReadEntries)
         {
@@ -135,7 +145,7 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             }
             else
             {
-                _logManager.Logger.Warning("Key not found: {0}", key);
+                _logManager.Logger.Warning("[Transactions Worker]: Unable to read: Key not found: {0}", key);
             }
         }
 
@@ -145,11 +155,6 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         _logManager.Logger.Debug("[Transaction]: Freeing leases");
 
         (var leasesToDequeue, var requestObjects) = FreeLeases(tx);
-
-        _logManager.Logger.Information("[ExecTx]: {@0}", _leases);
-
-        _logManager.Logger.Debug("[Transaction]: Leases to Dequeue {@0}", leasesToDequeue);
-        _logManager.Logger.Debug("[Transaction]: Leases to Request Again {@0}", requestObjects);
 
         var syncRequest = new SyncRequest();
         var leaseRequest = new LeaseRequest
@@ -163,15 +168,30 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         syncRequest.UpdateEntries.Add(request.WriteEntries);
         syncRequest.DequeueObjects.Add(leasesToDequeue);
 
-        _logManager.Logger.Information("[Transaction]: SYNC TX Broadcast: {@0}", syncRequest);
-        _logManager.Logger.Information("[Transaction]: REQUEST LEASES Broadcast: {@0}", leaseRequest);
+        _logManager.Logger.Information("[Transactions Worker]: Transaction Summary: " +
+            "\nObjects Updated: {@0}\nLeases to Dequeue: {@1}\n" +
+            "Leases to Request Again: {@2}", request.WriteEntries, leasesToDequeue, requestObjects);
+
+        _logManager.Logger.Debug("[Transaction]: SYNC TX Broadcast: {@0}", syncRequest);
+        _logManager.Logger.Debug("[Transaction]: REQUEST LEASES Broadcast: {@0}", leaseRequest);
 
         // Broadcast sync transaction request
-        _transactionSyncBroadcast.Broadcast<SyncRequest, SyncResponse>(syncRequest);
         _leaseRequestBroadcast.Broadcast<LeaseRequest, LeaseRequestResponse>(leaseRequest);
+        await _transactionSyncBroadcast.SyncURB<SyncRequest, SyncResponse>(syncRequest);
+
+        if (!_transactionSyncBroadcast.HasMajority) {
+            _logManager.Logger.Error("[Sync URB]: Failed to get a majority! Aborting Transaction!");
+            response.Entries.Clear();
+            response.Entries.Add(new DadInt {
+                Key = "abort",
+                Value = 0
+            });
+        }
 
         return response;
     }
+
+    
 
     public override Task<LeasesResponse> UpdateLeases(Leases leases, ServerCallContext context)
     {
@@ -205,7 +225,7 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             }
 
         }
-        _logManager.Logger.Information("[Current Leases State]: {@0}", _leases);
+        _logManager.Logger.Debug("[Current Leases State]: {@0}", _leases);
 
         return Task.FromResult(response);
     }
@@ -218,8 +238,10 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             _logManager.Logger.Debug("[SYNC TX]: Dequeuing: {0}", key);
             _leases[key].TryDequeue(out var none);
         }
-        _logManager.Logger.Information("[SYNC TX]: {@0}", _leases);
-        return Task.FromResult(new SyncResponse());
+        _logManager.Logger.Information("[SYNC TX]: Updated leases: {@0}", _leases);
+        return Task.FromResult(new SyncResponse {
+            Status = true
+        });
     }
 
     public async override Task<TxSubmitResponse> TxSubmit(TxSubmitRequest request, ServerCallContext context)
@@ -265,8 +287,27 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         return response;
     }
 
-    public override Task<StatusResponse> Status(TxStatusRequest request, ServerCallContext context)
+    public override Task<StatusResponse> Status(StatusRequest request, ServerCallContext context)
     {
-        return base.Status(request, context);
+        var response = new StatusResponse();
+        
+        if (request.IsFromClient) {
+            
+            _transactionSyncBroadcast.Broadcast<StatusRequest, StatusResponse>(new StatusRequest {
+                IsFromClient = false,
+            });
+
+            _leaseRequestBroadcast.Broadcast<LMStatusRequest, LMStatusResponse>(new LMStatusRequest());
+        }
+
+        _logManager.Logger.Information("\n============================[Status]===========================\n" +
+            "Internal Database - {@0}\n" +
+            "===============================================================\n"+
+            "Leases - {@1} \n" +
+            "===============================================================\n" +
+            "Pending Transactions - {@2}\n"+
+            "===============================================================\n", _internalDB, _leases, _pendingTransactionsObjects);
+
+        return Task.FromResult(response);
     }
 }

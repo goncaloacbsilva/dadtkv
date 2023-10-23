@@ -23,7 +23,7 @@ public class Program
 
         //change log level information to see more or less information
         //debug to see all information or information to only see relevat information
-        var logManager = new LogManager(identifier, LogEventLevel.Debug);
+        var logManager = new LogManager(identifier, LogEventLevel.Information);
 
         var configurationManager = new ConfigurationManager(configPath, identifier, true, logManager);
 

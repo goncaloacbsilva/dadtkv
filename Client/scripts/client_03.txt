@@ -14,11 +14,6 @@
 # both the read set and write set can be empty but the parenthesis will still be in the command
 # -----------------------------------------------------------------------------------------------
 T () (<"C",10>)
-W 7000
+W 12000
 T ("C") (<"B",1>)
-# C=10
-W 3000
-# Epoca 2
-T ("B") (<"A",9>)
-# B=1
 W 100000
