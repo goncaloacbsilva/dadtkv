@@ -3,8 +3,17 @@ using Serilog.Core;
 
 namespace Shared;
 
-public interface AbstractBroadcastRPC<TRequest, TResponse> {
-    Task<TResponse> Send(int index, TRequest request);
+public abstract class BroadcastMethods {
+    protected List<object> _clients;
+    protected LogManager _logManager;
+
+    public BroadcastMethods(LogManager logManager, List<object> clients) {
+        _clients = clients;
+        _logManager = logManager;
+    }
+
+    public abstract Task<object> Send(int index, object request);
+    public abstract bool ReceiveResponse(object response);
 }
 
 public abstract class BroadcastClient
@@ -27,41 +36,54 @@ public abstract class BroadcastClient
         }
     }
 
-    public abstract Task<TResponse> Send<TRequest, TResponse>(int index, TRequest request);
-
-    public void Broadcast<TRequest, TResponse>(TRequest request)
+    protected async Task Broadcast(BroadcastMethods broadcastMethods, object request)
     {
         for (int i = 0; i < _channels.Count; i++)
         {
             _logManager.Logger.Debug("[Broadcast]: Broadcasting to {0}", _channels[i].Target);
-            Send<TRequest, TResponse>(i, request);
+            broadcastMethods.Send(i, request);
         }
     }
 
-    public async Task<List<TResponse>> UniformReliableBroadcast<TRequest, TResponse>(TRequest request, Func<TResponse, bool> hasMajority) {
-        List<Task<TResponse>> sendTasks = new List<Task<TResponse>>();
+    protected async Task<List<object>> UniformReliableBroadcast(BroadcastMethods broadcastMethods, object request) {
+
+
+        List<Task<object>> sendTasks = new List<Task<object>>();
 
         
         for (int i = 0; i < _channels.Count; i++)
         {
             _logManager.Logger.Debug("[Broadcast (URB)]: Broadcasting to {0}", _channels[i].Target);
-            sendTasks.Add(Send<TRequest, TResponse>(i, request));
+            sendTasks.Add(broadcastMethods.Send(i, request));
         }
 
         // Wait for responses
         while (sendTasks.Any())
         {
-            
-            Task<TResponse> finishedTask = await Task.WhenAny(sendTasks);
+            Task<object> finishedTask = await Task.WhenAny(sendTasks);
             sendTasks.Remove(finishedTask);
-            if(finishedTask != null)
+            if(finishedTask != null && finishedTask.Exception == null)
             {
                 _logManager.Logger.Debug("[Broadcast (URB)]: Received response {@0}", finishedTask.Result);
-                if (hasMajority(finishedTask.Result)) { break; }
+                if (broadcastMethods.ReceiveResponse(finishedTask.Result)) { break; }
             }
         }
 
-        return sendTasks.Where(task => task.Result != null).Select(task => task.Result).ToList();
+        return sendTasks.Where(task => {
+            try {
+                return (task.Result != null);
+            } catch (AggregateException e) {
+                if (e.InnerExceptions.Count > 0 && e.InnerExceptions[0].Data.Contains("ClientIndex")) {
+                    var index = (int)e.InnerExceptions[0].Data["ClientIndex"]!;
+                    _logManager.Logger.Error("Error: Server {0} not responding", _channels[index].Target);
+                } else {
+                    _logManager.Logger.Error("Error: Server not responding and unable to get its address!");
+                    _logManager.Logger.Error("Exception: {@0}", e);
+                }
+
+                return false;
+            }
+        }).Select(task => task.Result).ToList();
     }
 
     public void ShutdownChannels()

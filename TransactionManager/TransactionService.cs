@@ -49,6 +49,29 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         if (_configurationManager.CurrentState == ServerState.Crashed) {
             Environment.Exit(0);
         }
+
+        var suspects = _configurationManager.CurrentSuspects();
+
+        if (suspects.Any()) {
+            var syncRequest = new SyncRequest();
+            var suspected = suspects.Select(suspectsPair => suspectsPair.suspected).ToList();
+
+            foreach (var lease in _leases) {
+                var pendingServers = lease.Value;
+                if (pendingServers.Count > 1) {
+                    var nextServer = pendingServers.ElementAt(1);
+                    if (suspected.Contains(pendingServers.Peek()) && nextServer.Equals(_configurationManager.Identifier)) {
+                        _logManager.Logger.Warning("{0} might be down, forcing to release lease of object {1}", pendingServers.Peek(), lease.Key);
+                        _leases[lease.Key].Dequeue();
+                        syncRequest.DequeueObjects.Add(lease.Key);
+                    }
+                }
+            }
+
+            if (syncRequest.DequeueObjects.Any()) {
+                _transactionSyncBroadcast.SyncURB(syncRequest);
+            }
+        }
     }
 
     private bool HasLease(string key)
@@ -82,8 +105,12 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
     private bool NextTxNeeds(string obj) {
         _logManager.Logger.Debug("Transaction Objects: {@0}", _pendingTransactionsObjects);
         if (_pendingTransactionsObjects.Count > 1) {
-            var tx = _pendingTransactionsObjects.ElementAt(1);
-            return tx.requiredLeases.Contains(obj);
+            try {
+                var tx = _pendingTransactionsObjects.ElementAt(1);
+                return tx.requiredLeases.Contains(obj);
+            } catch (Exception e) {
+                return false;
+            }
         }
 
         return false;
@@ -176,10 +203,10 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         _logManager.Logger.Debug("[Transaction]: REQUEST LEASES Broadcast: {@0}", leaseRequest);
 
         // Broadcast sync transaction request
-        _leaseRequestBroadcast.Broadcast<LeaseRequest, LeaseRequestResponse>(leaseRequest);
-        await _transactionSyncBroadcast.SyncURB<SyncRequest, SyncResponse>(syncRequest);
+        _leaseRequestBroadcast.Broadcast(leaseRequest);
+        await _transactionSyncBroadcast.SyncURB(syncRequest);
 
-        if (!_transactionSyncBroadcast.HasMajority) {
+        if (!_transactionSyncBroadcast.SyncHasMajority) {
             _logManager.Logger.Error("[Sync URB]: Failed to get a majority! Aborting Transaction!");
             response.Entries.Clear();
             response.Entries.Add(new DadInt {
@@ -264,7 +291,7 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
             };
 
             leaseRequest.Objects.Add(missingLeases);
-            _leaseRequestBroadcast.Broadcast<LeaseRequest, LeaseRequestResponse>(leaseRequest);
+            _leaseRequestBroadcast.Broadcast(leaseRequest);
         }
         
         // Append transaction
@@ -292,12 +319,8 @@ public class TransactionService : TransactionManagerService.TransactionManagerSe
         var response = new StatusResponse();
         
         if (request.IsFromClient) {
-            
-            _transactionSyncBroadcast.Broadcast<StatusRequest, StatusResponse>(new StatusRequest {
-                IsFromClient = false,
-            });
-
-            _leaseRequestBroadcast.Broadcast<LMStatusRequest, LMStatusResponse>(new LMStatusRequest());
+            _transactionSyncBroadcast.BroadcastStatus();
+            _leaseRequestBroadcast.BroadcastStatus();
         }
 
         _logManager.Logger.Information("\n============================[Status]===========================\n" +

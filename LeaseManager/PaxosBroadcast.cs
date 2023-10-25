@@ -2,83 +2,131 @@ using Shared;
 
 namespace LeaseManager;
 
-public enum BroadcastPhase
-{
-    Prepare,
-    Accept
+
+public class PrepareBroadcastMethods : BroadcastMethods {
+
+    private int _responses;
+    private bool _hasMajority;
+
+    public PrepareBroadcastMethods(LogManager logManager, List<object> clients) : base(logManager, clients)
+    {
+        _responses = 1;
+    }
+
+    public void ResetResponsesCounter() {
+        //1 to account for the request sent to the server it self
+        _responses = 1;
+    }
+
+    public override async Task<object> Send(int index, object request) {
+
+        var client = _clients[index] as LeaseManagerService.LeaseManagerServiceClient;
+
+        try {
+            return (object) await client!.PrepareAsync(request as PrepareRequest);
+        } catch (Exception e) {
+            e.Data.Add("ClientIndex", index);
+            throw;
+        }
+    }
+
+    public override bool ReceiveResponse(object response)
+    {
+        var responseCast = response as Promise;
+        _logManager.Logger.Debug("[Prepare Broadcast (URB)]: Received response {@0}", responseCast);
+
+        if (responseCast != null && responseCast.Status == PaxosResponseStatus.Accept)
+        {
+            _responses += 1;
+        }
+
+        _hasMajority = (_responses > (_clients.Count / 2));
+
+        return _hasMajority;
+    }
+
+    public bool HasMajority => _hasMajority;
+}
+
+public class AcceptBroadcastMethods : BroadcastMethods {
+
+    private int _responses;
+    private bool _hasMajority;
+
+    public AcceptBroadcastMethods(LogManager logManager, List<object> clients) : base(logManager, clients)
+    {
+        _responses = 1;
+    }
+
+    public void ResetResponsesCounter() {
+        //1 to account for the request sent to the server it self
+        _responses = 1;
+    }
+
+    public override async Task<object> Send(int index, object request) {
+
+        var client = _clients[index] as LeaseManagerService.LeaseManagerServiceClient;
+
+        try {
+            return (object) await client!.AcceptAsync(request as AcceptRequest);
+        } catch (Exception e) {
+            e.Data.Add("ClientIndex", index);
+            throw;
+        }
+    }
+
+    public override bool ReceiveResponse(object response)
+    {
+        var responseCast = response as Accepted;
+        _logManager.Logger.Debug("[Accepted Broadcast (URB)]: Received response {@0}", responseCast);
+
+        if (responseCast != null && responseCast.Status == PaxosResponseStatus.Accept)
+        {
+            _responses += 1;
+        }
+
+        _hasMajority = (_responses > (_clients.Count / 2));
+
+        return _hasMajority;
+    }
+
+    public bool HasMajority => _hasMajority;
 }
 
 public class PaxosBroadcast : BroadcastClient
 {
-    private readonly List<LeaseManagerService.LeaseManagerServiceClient> _clients;
-    private BroadcastPhase _phase;
-    private bool _hasMajority;
+    // RPC Broadcast Definitions
+    private PrepareBroadcastMethods _prepareRPC; 
+    private AcceptBroadcastMethods _acceptRPC;
     
     public PaxosBroadcast(ConfigurationManager configurationManager, LogManager logManager) : base(configurationManager, logManager, ServerType.Lease, true)
     {
-        _hasMajority = false;
-        _clients = new List<LeaseManagerService.LeaseManagerServiceClient>();
+        var _clients = new List<object>();
         
         foreach (var channel in _channels)
         {
             _clients.Add(new LeaseManagerService.LeaseManagerServiceClient(channel));
         }
+
+        _prepareRPC = new PrepareBroadcastMethods(logManager, _clients);
+        _acceptRPC = new AcceptBroadcastMethods(logManager, _clients);
     }
 
-    public Task<List<TResponse>> BroadcastWithPhase<TRequest, TResponse>(TRequest request, BroadcastPhase phase)
-    {
-        _phase = phase;
-        _hasMajority = false;
-        //1 to account for the request sent to the server it self
-        int responses = 1;
+    public async Task<List<Promise>> PrepareURB(PrepareRequest request) {
+        _prepareRPC.ResetResponsesCounter();
+        List<object> promisesObjs = await base.UniformReliableBroadcast(_prepareRPC, request as object);
 
-        Func<TResponse, bool> checkMajorityFunction = (TResponse response) =>
-        {
-            PaxosResponseStatus status = PaxosResponseStatus.Reject;
-
-            if (response != null) {
-                switch(_phase) {
-                    case BroadcastPhase.Prepare:
-                        status = (response as Promise).Status;
-                        break;
-                    case BroadcastPhase.Accept:
-                        status = (response as Accepted).Status;
-                        break;
-                    default:
-                        throw new Exception("[Paxos Broadcast]: Error: Phase not implemented");
-                }
-            }
-
-            if (status == PaxosResponseStatus.Accept)
-            {
-                responses += 1;
-            }
-
-            _hasMajority = (responses > (_clients.Count / 2));
-
-            return _hasMajority;
-        };
-
-        return UniformReliableBroadcast<TRequest, TResponse>(request, checkMajorityFunction);
+        return promisesObjs.Cast<Promise>().ToList(); 
     }
 
-    public override async Task<TResponse> Send<TRequest, TResponse>(int index, TRequest request)
-    {
-        try {
-            switch (_phase)
-            {
-                case BroadcastPhase.Prepare:
-                    return (TResponse) Convert.ChangeType(await _clients[index].PrepareAsync(request as PrepareRequest), typeof(TResponse));
-                case BroadcastPhase.Accept:
-                    return (TResponse)Convert.ChangeType(await _clients[index].AcceptAsync(request as AcceptRequest), typeof(TResponse));
-                default:
-                    throw new Exception("[Paxos Broadcast]: Error: Phase not implemented");
-            }
-        } catch (Exception e) {
-            _logManager.Logger.Error("[Paxos Broadcast]: Error: Server {0} not responding", _channels[index].Target);
-            return default(TResponse);
-        }
+    public async Task<List<Accepted>> AcceptURB(AcceptRequest request) {
+        _acceptRPC.ResetResponsesCounter();
+        List<object> acceptObjs = await base.UniformReliableBroadcast(_acceptRPC, request as object);
+
+        return acceptObjs.Cast<Accepted>().ToList(); 
     }
 
-    public bool HasMajority => _hasMajority;
+    public bool PrepareHasMajority => _prepareRPC.HasMajority;
+    public bool AcceptHasMajority => _acceptRPC.HasMajority;
+
 }

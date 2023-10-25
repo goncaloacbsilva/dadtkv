@@ -141,7 +141,7 @@ class Program
         //LEASE to open individual windows for each lease manager
         //CLIENT to open individual windows for each client
         //ALL to open individual windows for all the processes
-        pm.fileReader(filePath,ShowConsole.TRANSACTION);
+        pm.fileReader(filePath,ShowConsole.ALL);
 
         Console.WriteLine("Press Enter to shutdown");
         while (Console.ReadKey(true).Key != ConsoleKey.Enter)

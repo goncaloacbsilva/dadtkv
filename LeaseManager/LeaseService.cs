@@ -176,10 +176,11 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
             _state.lastPromiseIdentifier = _configurationManager.Identifier;
             // Prepare
             _logManager.Logger.Information("[Paxos]: Sending prepare requests...");
-            var promises = await _paxosBroadcast.BroadcastWithPhase<PrepareRequest, Promise>(new PrepareRequest {
+
+            var promises = await _paxosBroadcast.PrepareURB(new PrepareRequest {
                 Epoch = _configurationManager.CurrentEpoch,
                 Identifier = _configurationManager.Identifier
-            }, BroadcastPhase.Prepare);
+            });
 
             // Check if there were promises with accepted values
             var highestAcceptedValue = HighestAcceptedValue(promises);
@@ -202,16 +203,16 @@ public class LeaseService : LeaseManagerService.LeaseManagerServiceBase
                 Identifier = _configurationManager.Identifier
             };
             request.Value.Add(_state.value);
-            var accept = await _paxosBroadcast.BroadcastWithPhase<AcceptRequest, Accepted>(request, BroadcastPhase.Accept);
+            var accept = await _paxosBroadcast.AcceptURB(request);
 
-            if (_paxosBroadcast.HasMajority) {
+            if (_paxosBroadcast.AcceptHasMajority) {
                 
                 // Broadcast choosen value
                 var leases = new Leases();
                 leases.Leases_.Add(getLeasesOrdered(_state.value));
 
                 _logManager.Logger.Information("[Paxos]: Finished! The choosen value is: {@0}", leases.Leases_);
-                _leasesBroadcast.Broadcast<Leases, LeasesResponse>(leases);
+                _leasesBroadcast.Broadcast(leases);
             } else {
                 _logManager.Logger.Error("[Paxos]: Failed to get a majority! The value will not be commited");
             }

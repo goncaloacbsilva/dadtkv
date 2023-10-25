@@ -40,7 +40,7 @@ class TransactionsWorker {
             }
         } catch (Exception e) {
             _logManager.Logger.Fatal("[Transactions Worker]: FATAL: {0}", e);
-            Environment.Exit(1);
+            //Environment.Exit(1);
         }
     }
 }
