@@ -7,7 +7,7 @@ public class Program
     public static void Main(string[] args)
     {
         
-        // ./Client <configPath> <identifier> <scriptPath>
+        // ./Client <configPath> <identifier> <scriptPath> <log level>
         
         string configPath = args[0];
         string identifier = args[1];
@@ -15,7 +15,19 @@ public class Program
 
         //change log level information to see more or less information
         //debug to see all information or information to only see relevat information
-        var logManager = new LogManager(identifier, LogEventLevel.Information);
+
+        LogEventLevel logLevel = LogEventLevel.Information;
+
+        switch (args[3]) {
+            case "DEBUG":
+                logLevel = LogEventLevel.Debug;
+                break;
+            default:
+                logLevel = LogEventLevel.Information;
+                break;
+        }
+
+        var logManager = new LogManager(identifier, logLevel);
         ConfigurationManager configurationManager = new ConfigurationManager(configPath, identifier, false, logManager);
         ConnectionManager connectionManager = new ConnectionManager(configurationManager.TransactionManagers(), logManager);
         ScriptParser parser = new ScriptParser(scriptPath, connectionManager, identifier, logManager);

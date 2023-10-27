@@ -8,22 +8,33 @@ public class Program
     static void Main(string[] args)
     {
 
-        if (args.Length < 4)
+        if (args.Length < 5)
         {
             Console.WriteLine("ERROR: Arguments required");
             return;
         }
 
-        // ./LeaseManager <configPath> <identifier> <address> <port>
+        // ./LeaseManager <configPath> <identifier> <address> <port> <log level>
 
         string configPath = args[0];
         string identifier = args[1];
-        string address = args[2];
-        int port = int.Parse(args[3]);
+        string address = args[3];
+        int port = int.Parse(args[4]);
+
+        LogEventLevel logLevel = LogEventLevel.Information;
+
+        switch (args[2]) {
+            case "DEBUG":
+                logLevel = LogEventLevel.Debug;
+                break;
+            default:
+                logLevel = LogEventLevel.Information;
+                break;
+        }
 
         //change log level information to see more or less information
         //debug to see all information or information to only see relevat information
-        var logManager = new LogManager(identifier, LogEventLevel.Information);
+        var logManager = new LogManager(identifier, logLevel);
 
         var configurationManager = new ConfigurationManager(configPath, identifier, true, logManager);
 

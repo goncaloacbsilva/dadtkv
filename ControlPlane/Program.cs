@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using CommandLine;
 
 public enum ShowConsole
 {
@@ -74,7 +75,7 @@ class Program
         process.Start();
     }
 
-    private void fileReader(string filePath, ShowConsole showConsole)
+    private void fileReader(string filePath, ShowConsole showConsole, string logLevel)
     {
         // Read config
         var lines = File.ReadAllLines(filePath);
@@ -93,7 +94,7 @@ class Program
                         //sees if it is a client process
                         if (command[2] == "C")
                         {
-                            string[] args = { filePath, command[1], command[3] };
+                            string[] args = { filePath, command[1], command[3], logLevel};
                             Console.WriteLine("Launching client");
                             launchClient(args, showConsole);
                         }
@@ -105,7 +106,7 @@ class Program
 
                             var args = (new[]
                             {
-                                filePath, command[1]
+                                filePath, command[1],logLevel
                             }).Concat(address);
 
                             launchTransactionManager(args.ToArray(), showConsole);
@@ -118,7 +119,7 @@ class Program
 
                             var args = (new[]
                             {
-                                filePath, command[1]
+                                filePath, command[1],logLevel
                             }).Concat(address);
                             launchLease(args.ToArray(), showConsole); 
                         }
@@ -127,26 +128,63 @@ class Program
             }
         }
     }
+    
+    public class Options
+    {
+        [Value(0)]
+        public string FilePath { get; set; }
+
+        [Option("view", Required = false, Default = "ALL", HelpText = "Define which terminals shold open:\n" +
+            "ALL           : Show the terminals of all the clients, transaction managers and lease managers\n" +
+            "CLIENT        : Only show the terminals of the clients\n" +
+            "TRANSACTION   : Only show the terminals of the transaction managers\n" +
+            "LEASE         : Only show the terminals of the lease managers\n")]
+        public string View { get; set; }
+
+        [Option("logLevel", Required = false, Default = "ALL", HelpText = "Define which log level to see:\n" +
+            "DEBUG           : Show the detailed information of the program and processes\n" +
+            "INFORMATION     : Show the relevant informatINFO of the program and processes\n")]
+        public string LogLevel { get; set; }
+    }
 
     public static void Main(string[] args)
     {
-        Program pm = new Program();
-        //change file path
-        string filePath = "C:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt";
-        //Console.WriteLine("Introduce the path to the configuration file");
-        //string filePath = Console.ReadLine();
 
-        //change showconsole between the following modes:
-        //TRANSACTION to open individual windows for each transaction manager
-        //LEASE to open individual windows for each lease manager
-        //CLIENT to open individual windows for each client
-        //ALL to open individual windows for all the processes
-        pm.fileReader(filePath,ShowConsole.ALL);
-
-        Console.WriteLine("Press Enter to shutdown");
-        while (Console.ReadKey(true).Key != ConsoleKey.Enter)
+        Parser.Default.ParseArguments<Options>(args)
+        .WithParsed<Options>(o =>
         {
+            ShowConsole consoleMode = ShowConsole.ALL;
+            
+            Program pm = new Program();
+            
+            switch (o.View.ToLower()) {
+                case "transaction":
+                    consoleMode = ShowConsole.TRANSACTION;
+                    break;
+                case "lease":
+                    consoleMode = ShowConsole.LEASE;
+                    break;
+                case "client":
+                    consoleMode = ShowConsole.CLIENT;
+                    break;
+                default:
+                    consoleMode = ShowConsole.ALL; 
+                    break;
+            }
+
+            pm.fileReader(o.FilePath,consoleMode, o.LogLevel);
+            
             Console.WriteLine("Press Enter to shutdown");
-        }
+            while (Console.ReadKey(true).Key != ConsoleKey.Enter)
+            {
+                Console.WriteLine("Press Enter to shutdown");
+            }
+        });
+
+
+        
+        //change file path
+        //string filePath = "C:\\Users\\renat\\Desktop\\dadtkv\\ControlPlane\\configs\\sample.txt";
+        
     }
 }
